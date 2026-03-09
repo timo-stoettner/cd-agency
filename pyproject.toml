@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cd-agency"
+version = "0.1.0"
+description = "A content design agency powered by specialized AI agents"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.39.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "rich>=13.0",
+    "click>=8.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[project.scripts]
+cd-agency = "runtime.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/adedayoagarau/cd-agency"
+Repository = "https://github.com/adedayoagarau/cd-agency"
+Issues = "https://github.com/adedayoagarau/cd-agency/issues"
+
+[tool.setuptools.packages.find]
+include = ["runtime*", "tools*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

@@ -1,0 +1,28 @@
+run = "cd-agency --help"
+entrypoint = "runtime/cli.py"
+language = "python3"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "cd-agency interactive"]
+
+[env]
+PYTHONPATH = "."
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[packager]
+language = "python3"
+
+[packager.features]
+enabledForHosting = false
+packageSearch = true
+guessImports = true
+
+[languages.python3]
+pattern = "**/*.py"
+syntax = "python"

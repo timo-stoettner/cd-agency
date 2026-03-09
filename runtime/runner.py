@@ -1,0 +1,180 @@
+"""Agent runner — executes agents via the Anthropic API."""
+
+from __future__ import annotations
+
+import time
+from typing import Any
+
+import anthropic
+
+from runtime.agent import Agent, AgentOutput
+from runtime.config import Config
+
+
+class AgentRunner:
+    """Executes content design agents via the Anthropic Claude API."""
+
+    def __init__(self, config: Config | None = None) -> None:
+        self.config = config or Config.from_env()
+        self._client: anthropic.Anthropic | None = None
+
+    @property
+    def client(self) -> anthropic.Anthropic:
+        """Lazy-initialize the Anthropic client."""
+        if self._client is None:
+            self._client = anthropic.Anthropic(api_key=self.config.api_key)
+        return self._client
+
+    def run(
+        self,
+        agent: Agent,
+        user_input: dict[str, Any],
+        *,
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        stream: bool = False,
+    ) -> AgentOutput:
+        """Execute an agent with the given input.
+
+        Args:
+            agent: The agent to execute.
+            user_input: Dict of input fields matching the agent's input schema.
+            model: Override the default model.
+            max_tokens: Override the default max tokens.
+            temperature: Override the default temperature.
+            stream: If True, return a streaming response.
+
+        Returns:
+            AgentOutput with the agent's response and metadata.
+
+        Raises:
+            ValueError: If required inputs are missing.
+            anthropic.APIError: If the API call fails after retries.
+        """
+        # Validate input
+        errors = agent.validate_input(user_input)
+        if errors:
+            raise ValueError(f"Input validation failed: {'; '.join(errors)}")
+
+        # Build messages
+        system_message = agent.build_system_message()
+        user_message = agent.build_user_message(user_input)
+
+        # Resolve parameters
+        resolved_model = model or self.config.model
+        resolved_max_tokens = max_tokens or self.config.max_tokens
+        resolved_temperature = temperature if temperature is not None else self.config.temperature
+
+        if stream:
+            return self._run_streaming(
+                agent, system_message, user_message,
+                resolved_model, resolved_max_tokens, resolved_temperature,
+            )
+
+        return self._run_sync(
+            agent, system_message, user_message,
+            resolved_model, resolved_max_tokens, resolved_temperature,
+        )
+
+    def _run_sync(
+        self,
+        agent: Agent,
+        system_message: str,
+        user_message: str,
+        model: str,
+        max_tokens: int,
+        temperature: float,
+    ) -> AgentOutput:
+        """Execute a synchronous (non-streaming) API call with retry."""
+        last_error: Exception | None = None
+
+        for attempt in range(self.config.max_retries):
+            try:
+                start = time.monotonic()
+                response = self.client.messages.create(
+                    model=model,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    system=system_message,
+                    messages=[{"role": "user", "content": user_message}],
+                )
+                elapsed_ms = (time.monotonic() - start) * 1000
+
+                content = ""
+                for block in response.content:
+                    if block.type == "text":
+                        content += block.text
+
+                return AgentOutput(
+                    content=content,
+                    agent_name=agent.name,
+                    model=model,
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                    latency_ms=elapsed_ms,
+                    raw_response=response,
+                )
+            except anthropic.APIStatusError as e:
+                last_error = e
+                # Don't retry on client errors (4xx) except rate limits (429)
+                if e.status_code != 429 and 400 <= e.status_code < 500:
+                    raise
+                # Exponential backoff for retryable errors
+                if attempt < self.config.max_retries - 1:
+                    time.sleep(2 ** attempt)
+            except anthropic.APIConnectionError as e:
+                last_error = e
+                if attempt < self.config.max_retries - 1:
+                    time.sleep(2 ** attempt)
+
+        raise last_error  # type: ignore[misc]
+
+    def _run_streaming(
+        self,
+        agent: Agent,
+        system_message: str,
+        user_message: str,
+        model: str,
+        max_tokens: int,
+        temperature: float,
+    ) -> AgentOutput:
+        """Execute a streaming API call, collecting the full response."""
+        start = time.monotonic()
+
+        with self.client.messages.stream(
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system=system_message,
+            messages=[{"role": "user", "content": user_message}],
+        ) as stream:
+            response = stream.get_final_message()
+
+        elapsed_ms = (time.monotonic() - start) * 1000
+
+        content = ""
+        for block in response.content:
+            if block.type == "text":
+                content += block.text
+
+        return AgentOutput(
+            content=content,
+            agent_name=agent.name,
+            model=model,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            latency_ms=elapsed_ms,
+            raw_response=response,
+        )
+
+
+def run_agent(
+    agent: Agent,
+    user_input: dict[str, Any],
+    config: Config | None = None,
+    **kwargs: Any,
+) -> AgentOutput:
+    """Convenience function to run an agent without creating a runner."""
+    runner = AgentRunner(config)
+    return runner.run(agent, user_input, **kwargs)
