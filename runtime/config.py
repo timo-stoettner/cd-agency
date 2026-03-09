@@ -13,6 +13,85 @@ CONFIG_FILENAMES = [".cd-agency.yaml", ".cd-agency.yml", "cd-agency.yaml"]
 
 
 @dataclass
+class ProductContext:
+    """Product-level context injected into every agent prompt."""
+
+    product_name: str = ""
+    description: str = ""
+    domain: str = ""
+    audience: str = ""
+    tone: str = ""
+    platform: str = ""
+    guidelines: list[str] = field(default_factory=list)
+
+    def is_configured(self) -> bool:
+        """Return True if any context field is set."""
+        return bool(self.product_name or self.description or self.domain)
+
+    def build_context_block(self) -> str:
+        """Build a context block for injection into agent system prompts."""
+        if not self.is_configured():
+            return ""
+
+        parts = ["## Product Context\n"]
+
+        if self.product_name:
+            parts.append(f"**Product:** {self.product_name}")
+        if self.description:
+            parts.append(f"**Description:** {self.description}")
+        if self.domain:
+            parts.append(f"**Domain:** {self.domain}")
+        if self.audience:
+            parts.append(f"**Target Audience:** {self.audience}")
+        if self.tone:
+            parts.append(f"**Tone & Voice:** {self.tone}")
+        if self.platform:
+            parts.append(f"**Platform:** {self.platform}")
+        if self.guidelines:
+            parts.append("\n**Content Guidelines:**")
+            for g in self.guidelines:
+                parts.append(f"- {g}")
+
+        parts.append(
+            "\nUse this product context to tailor all suggestions, "
+            "examples, and language to this specific product and audience."
+        )
+        return "\n".join(parts)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> ProductContext:
+        """Create from a dictionary (e.g. parsed from YAML)."""
+        return cls(
+            product_name=data.get("product_name", ""),
+            description=data.get("description", ""),
+            domain=data.get("domain", ""),
+            audience=data.get("audience", ""),
+            tone=data.get("tone", ""),
+            platform=data.get("platform", ""),
+            guidelines=data.get("guidelines", []),
+        )
+
+    def to_dict(self) -> dict:
+        """Export as a dictionary."""
+        d: dict = {}
+        if self.product_name:
+            d["product_name"] = self.product_name
+        if self.description:
+            d["description"] = self.description
+        if self.domain:
+            d["domain"] = self.domain
+        if self.audience:
+            d["audience"] = self.audience
+        if self.tone:
+            d["tone"] = self.tone
+        if self.platform:
+            d["platform"] = self.platform
+        if self.guidelines:
+            d["guidelines"] = self.guidelines
+        return d
+
+
+@dataclass
 class Config:
     """Runtime configuration with config file and environment variable overrides.
 
@@ -32,6 +111,7 @@ class Config:
     default_preset: str = ""
     brand_voice_guide: str = ""
     output_format: str = "text"  # text, json, markdown
+    product_context: ProductContext = field(default_factory=ProductContext)
 
     @classmethod
     def from_env(cls) -> Config:
@@ -44,6 +124,10 @@ class Config:
             "CD_AGENCY_AGENTS_DIR",
             file_config.get("agents_dir", "content-design"),
         )
+        # Load product context
+        context_data = file_config.get("product_context", {})
+        product_context = ProductContext.from_dict(context_data) if context_data else ProductContext()
+
         return cls(
             api_key=os.environ.get(
                 "ANTHROPIC_API_KEY",
@@ -65,6 +149,7 @@ class Config:
             default_preset=file_config.get("default_preset", ""),
             brand_voice_guide=file_config.get("brand_voice_guide", ""),
             output_format=file_config.get("output_format", "text"),
+            product_context=product_context,
         )
 
     @staticmethod

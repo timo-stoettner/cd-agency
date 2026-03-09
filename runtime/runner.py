@@ -59,6 +59,19 @@ class AgentRunner:
 
         # Build messages
         system_message = agent.build_system_message()
+
+        # Inject product context if configured
+        if self.config.product_context.is_configured():
+            context_block = self.config.product_context.build_context_block()
+            system_message = f"{system_message}\n\n---\n\n{context_block}"
+
+        # Inject project memory if available
+        from runtime.memory import ProjectMemory
+        memory = ProjectMemory.load()
+        memory_context = memory.get_context_for_agent(agent.name)
+        if memory_context:
+            system_message = f"{system_message}\n\n---\n\n{memory_context}"
+
         user_message = agent.build_user_message(user_input)
 
         # Resolve parameters
