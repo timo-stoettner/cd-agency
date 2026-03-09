@@ -651,6 +651,139 @@ def memory_export(fmt: str) -> None:
         click.echo(output.getvalue())
 
 
+# --- Context commands ---
+
+@main.group()
+def context() -> None:
+    """Manage product context (domain, audience, tone) for tailored suggestions."""
+    pass
+
+
+@context.command("show")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def context_show(as_json: bool) -> None:
+    """Show the current product context."""
+    config = Config.from_env()
+    ctx = config.product_context
+
+    if not ctx.is_configured():
+        console.print("[dim]No product context configured yet.[/dim]")
+        console.print("Run [cyan]cd-agency context init[/cyan] to set up your product context.")
+        return
+
+    if as_json:
+        click.echo(json.dumps(ctx.to_dict(), indent=2))
+        return
+
+    console.print("\n[bold]Product Context[/bold]\n")
+    if ctx.product_name:
+        console.print(f"  [cyan]Product:[/cyan]  {ctx.product_name}")
+    if ctx.description:
+        console.print(f"  [cyan]About:[/cyan]    {ctx.description}")
+    if ctx.domain:
+        console.print(f"  [cyan]Domain:[/cyan]   {ctx.domain}")
+    if ctx.audience:
+        console.print(f"  [cyan]Audience:[/cyan] {ctx.audience}")
+    if ctx.tone:
+        console.print(f"  [cyan]Tone:[/cyan]     {ctx.tone}")
+    if ctx.platform:
+        console.print(f"  [cyan]Platform:[/cyan] {ctx.platform}")
+    if ctx.guidelines:
+        console.print(f"  [cyan]Guidelines:[/cyan]")
+        for g in ctx.guidelines:
+            console.print(f"    - {g}")
+    console.print()
+
+
+@context.command("init")
+def context_init() -> None:
+    """Interactively set up product context for your project."""
+    from pathlib import Path
+
+    console.print("\n[bold]Product Context Setup[/bold]")
+    console.print("This helps agents tailor suggestions to your product.\n")
+
+    product_name = click.prompt("Product name", default="")
+    description = click.prompt("What does your product do? (1-2 sentences)", default="")
+    domain = click.prompt("Domain (e.g. fintech, healthcare, e-commerce, SaaS)", default="")
+    audience = click.prompt("Target audience (e.g. small business owners, developers)", default="")
+    tone = click.prompt("Tone (e.g. professional but friendly, casual, formal)", default="")
+    platform = click.prompt("Platform (e.g. web app, mobile app, desktop, multi-platform)", default="")
+
+    guidelines_str = click.prompt(
+        "Content guidelines, comma-separated (e.g. 'no jargon, use active voice')",
+        default="",
+    )
+    guidelines = [g.strip() for g in guidelines_str.split(",") if g.strip()] if guidelines_str else []
+
+    # Build the context dict
+    context_data: dict[str, Any] = {}
+    if product_name:
+        context_data["product_name"] = product_name
+    if description:
+        context_data["description"] = description
+    if domain:
+        context_data["domain"] = domain
+    if audience:
+        context_data["audience"] = audience
+    if tone:
+        context_data["tone"] = tone
+    if platform:
+        context_data["platform"] = platform
+    if guidelines:
+        context_data["guidelines"] = guidelines
+
+    if not context_data:
+        console.print("[yellow]No context provided. Skipping.[/yellow]")
+        return
+
+    # Read existing config or create new
+    config_path = Path(".cd-agency.yaml")
+    existing: dict[str, Any] = {}
+    if config_path.exists():
+        import yaml as _yaml
+        existing = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+
+    existing["product_context"] = context_data
+
+    import yaml as _yaml
+    config_path.write_text(
+        _yaml.dump(existing, default_flow_style=False, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    console.print(f"\n[green]Product context saved to {config_path}[/green]")
+    console.print("[dim]All agents will now use this context to tailor their suggestions.[/dim]\n")
+
+
+@context.command("set")
+@click.argument("key", type=click.Choice([
+    "product_name", "description", "domain", "audience", "tone", "platform",
+]))
+@click.argument("value")
+def context_set(key: str, value: str) -> None:
+    """Set a single product context field."""
+    from pathlib import Path
+    import yaml as _yaml
+
+    config_path = Path(".cd-agency.yaml")
+    existing: dict[str, Any] = {}
+    if config_path.exists():
+        existing = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+
+    if "product_context" not in existing:
+        existing["product_context"] = {}
+
+    existing["product_context"][key] = value
+
+    config_path.write_text(
+        _yaml.dump(existing, default_flow_style=False, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    console.print(f"[green]Set {key} = {value}[/green]")
+
+
 # --- Stats command ---
 
 @main.command("stats")
