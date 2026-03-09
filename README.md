@@ -40,13 +40,23 @@ You can use the prompts from the `content-design-prompt-library` directly with t
 
 ## Content Design Agents
 
-| Agent                                                                            | Specialty                                      | When to Use                                                                                             |
-| :------------------------------------------------------------------------------- | :--------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
-| ✍️ [Content Designer Generalist](./content-design/content-designer-generalist.md) | UX writing, microcopy, content strategy basics | General content design tasks, initial content drafts, quick reviews, ensuring brand voice consistency. |
-| 💬 [Conversational AI Designer](./content-design/conversational-ai-designer.md)  | Chatbot scripts, voice UIs, dialog flows       | Designing dialogue for chatbots, IVRs, or voice assistants; defining error recovery and personality.    |
-| ♿ [Accessibility Content Auditor](./content-design/accessibility-content-auditor.md) | WCAG compliance, inclusive language            | Auditing content for accessibility, ensuring clear and inclusive language for all users.                |
-
-*(More agents to be added soon!)*
+| Agent                                                                            | Specialty                                        | When to Use                                                                                                 |
+| :------------------------------------------------------------------------------- | :----------------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
+| ✍️ [Content Designer Generalist](./content-design/content-designer-generalist.md) | UX writing, microcopy, content strategy basics   | General content design tasks, initial content drafts, quick reviews, ensuring brand voice consistency.      |
+| 💬 [Conversational AI Designer](./content-design/conversational-ai-designer.md)  | Chatbot scripts, voice UIs, dialog flows         | Designing dialogue for chatbots, IVRs, or voice assistants; defining error recovery and personality.        |
+| ♿ [Accessibility Content Auditor](./content-design/accessibility-content-auditor.md) | WCAG compliance, inclusive language              | Auditing content for accessibility, ensuring clear and inclusive language for all users.                    |
+| 📝 [Microcopy Review Agent](./content-design/microcopy-review-agent.md)         | Microcopy refinement, UX text optimization       | Reviewing and finessing button labels, error messages, and UI text for clarity and impact.                  |
+| 🎙️ [Tone Evaluation Agent](./content-design/tone-evaluation-agent.md)           | Tone analysis, brand voice alignment             | Assessing and refining the emotional register and overall feel of content to match brand identity.          |
+| 🚀 [Onboarding Flow Designer](./content-design/onboarding-flow-designer.md)      | Onboarding experiences, user activation          | Crafting engaging onboarding flows, guiding new users to activation and retention.                          |
+| 📚 [Technical Documentation Writer](./content-design/technical-documentation-writer.md) | Technical content, API docs, SDK guides          | Creating clear, accurate technical documentation for developers and advanced users.                         |
+| 🎯 [CTA Optimization Specialist](./content-design/cta-optimization-specialist.md) | Conversion-focused CTAs, persuasive microcopy    | Designing and optimizing calls-to-action to drive user engagement and business goals.                       |
+| ❗ [Error Message Architect](./content-design/error-message-architect.md)         | Human-centered error messages, resolution paths  | Designing helpful, actionable error messages that guide users to resolution.                                |
+| 📱 [Mobile UX Writer](./content-design/mobile-ux-writer.md)                     | Mobile-optimized microcopy, app content          | Crafting concise, impactful content for mobile interfaces, push notifications, and in-app alerts.           |
+| 🌍 [Localization Content Strategist](./content-design/localization-content-strategist.md) | Cultural relevance, global content adaptation    | Adapting content for global audiences, ensuring cultural relevance and linguistic accuracy.                 |
+| 🔔 [Notification Content Designer](./content-design/notification-content-designer.md) | Timely, action-oriented notifications            | Crafting clear and engaging notification messages for push, in-app, and email channels.                     |
+| 🔐 [Privacy & Legal Content Simplifier](./content-design/privacy-legal-content-simplifier.md) | Legal clarity, user trust, compliance content    | Translating complex legal and privacy jargon into clear, user-friendly language.                            |
+| ✨ [Empty State & Placeholder Specialist](./content-design/empty-state-placeholder-specialist.md) | Engaging empty states, helpful placeholders      | Designing content for blank spaces, loading messages, and input hints to guide and delight users.           |
+| 🔍 [Search Experience Writer](./content-design/search-experience-writer.md)     | Search interfaces, discoverability, no-results   | Optimizing content for search bars, filters, and no-results pages to enhance user satisfaction.             |
 
 ## Contributing
 
