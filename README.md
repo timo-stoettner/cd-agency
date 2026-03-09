@@ -1,67 +1,117 @@
 # Content Design Agency
 
-A complete AI agency specializing in Content Design at your fingertips. From microcopy wizards to conversational AI architects, each agent is a specialized expert with personality, processes, and proven deliverables designed for content designers, UX writers, and conversation designers.
+A complete AI agency specializing in Content Design. 15 specialized agents for UX writing, microcopy, content strategy, and conversation design — each with structured inputs/outputs, system prompts, and few-shot examples ready for integration.
 
-This agency is built on the principles of specialized AI agents, inspired by the [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) project. Each agent is:
+Built on the principles of [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents). Each agent is:
 
-- 🎯 **Specialized**: Deep expertise in content design domains (not generic prompt templates)
-- 🧠 **Personality-Driven**: Unique voice, communication style, and approach tailored for content tasks
-- 📋 **Deliverable-Focused**: Real content, structured outputs, and measurable outcomes
-- ✅ **Production-Ready**: Battle-tested workflows and success metrics for content excellence
+- **Specialized**: Deep expertise in specific content design domains
+- **Machine-Parseable**: Structured YAML frontmatter with typed inputs/outputs
+- **Prompt-Engineered**: Real system prompts with few-shot examples, not personality fluff
+- **Composable**: Agents reference each other via `related_agents` for multi-step workflows
 
-Think of it as: Assembling your dream content design team, except they're AI specialists who never sleep, never complain, and always deliver high-quality content.
+## Quick Start
 
-## How to Use These Agents
+1. **Pick an agent** from the table below (or use the [decision tree](./docs/WHEN_TO_USE.md))
+2. **Copy the agent file** to your AI system
+3. **Use the System Prompt section** as your system message and the Few-Shot Examples for calibration
 
-The agents in this repository are designed to be easily integrated with various AI agent systems. Each agent file contains:
+Not sure which agent to use? Start with the [Content Designer Generalist](./content-design/content-designer-generalist.md) — it will recommend specialists.
 
--   Identity & personality traits
--   Core mission & workflows
--   Technical deliverables with content examples
--   Success metrics & communication style
+## Not Sure Which Agent? → [Decision Tree](./docs/WHEN_TO_USE.md)
 
-**General Usage (adapt based on your AI system):**
-
-1.  **Browse the agents** below and copy/adapt the ones you need to your agent system's directory.
-2.  **Activate any agent** in your AI sessions by referencing its name or domain.
-    *Example: "Hey AI, activate Microcopy Specialist mode and help me refine this button label."*
-3.  **Customize** agent personalities, workflows, and deliverables for your specific needs.
-
-### Integration with `content-design-prompt-library`
-
-This agency leverages the comprehensive [AdedayoAgarau/content-design-prompt-library](https://github.com/adedayoagarau/content-design-prompt-library). Many of our agents are designed to either generate content using these prompts, or evaluate content against the principles embedded within them.
-
-You can use the prompts from the `content-design-prompt-library` directly with the relevant agents:
-
-1.  **Choose a Prompt** from the `content-design-prompt-library` (e.g., `error-message-design.md`).
-2.  **Customize Variables** within the chosen prompt template.
-3.  **Instruct an agent** from this agency to utilize the customized prompt.
-    *Example: "Hey AI, use the Error Message Designer agent and this prompt template to generate error messages for a 'connection timeout' error impacting a novice user."*
+The decision tree maps every common content design task to the right agent, including multi-agent handoff patterns.
 
 ## Content Design Agents
 
-| Agent                                                                            | Specialty                                        | When to Use                                                                                                 |
-| :------------------------------------------------------------------------------- | :----------------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
-| ✍️ [Content Designer Generalist](./content-design/content-designer-generalist.md) | UX writing, microcopy, content strategy basics   | General content design tasks, initial content drafts, quick reviews, ensuring brand voice consistency.      |
-| 💬 [Conversational AI Designer](./content-design/conversational-ai-designer.md)  | Chatbot scripts, voice UIs, dialog flows         | Designing dialogue for chatbots, IVRs, or voice assistants; defining error recovery and personality.        |
-| ♿ [Accessibility Content Auditor](./content-design/accessibility-content-auditor.md) | WCAG compliance, inclusive language              | Auditing content for accessibility, ensuring clear and inclusive language for all users.                    |
-| 📝 [Microcopy Review Agent](./content-design/microcopy-review-agent.md)         | Microcopy refinement, UX text optimization       | Reviewing and finessing button labels, error messages, and UI text for clarity and impact.                  |
-| 🎙️ [Tone Evaluation Agent](./content-design/tone-evaluation-agent.md)           | Tone analysis, brand voice alignment             | Assessing and refining the emotional register and overall feel of content to match brand identity.          |
-| 🚀 [Onboarding Flow Designer](./content-design/onboarding-flow-designer.md)      | Onboarding experiences, user activation          | Crafting engaging onboarding flows, guiding new users to activation and retention.                          |
-| 📚 [Technical Documentation Writer](./content-design/technical-documentation-writer.md) | Technical content, API docs, SDK guides          | Creating clear, accurate technical documentation for developers and advanced users.                         |
-| 🎯 [CTA Optimization Specialist](./content-design/cta-optimization-specialist.md) | Conversion-focused CTAs, persuasive microcopy    | Designing and optimizing calls-to-action to drive user engagement and business goals.                       |
-| ❗ [Error Message Architect](./content-design/error-message-architect.md)         | Human-centered error messages, resolution paths  | Designing helpful, actionable error messages that guide users to resolution.                                |
-| 📱 [Mobile UX Writer](./content-design/mobile-ux-writer.md)                     | Mobile-optimized microcopy, app content          | Crafting concise, impactful content for mobile interfaces, push notifications, and in-app alerts.           |
-| 🌍 [Localization Content Strategist](./content-design/localization-content-strategist.md) | Cultural relevance, global content adaptation    | Adapting content for global audiences, ensuring cultural relevance and linguistic accuracy.                 |
-| 🔔 [Notification Content Designer](./content-design/notification-content-designer.md) | Timely, action-oriented notifications            | Crafting clear and engaging notification messages for push, in-app, and email channels.                     |
-| 🔐 [Privacy & Legal Content Simplifier](./content-design/privacy-legal-content-simplifier.md) | Legal clarity, user trust, compliance content    | Translating complex legal and privacy jargon into clear, user-friendly language.                            |
-| ✨ [Empty State & Placeholder Specialist](./content-design/empty-state-placeholder-specialist.md) | Engaging empty states, helpful placeholders      | Designing content for blank spaces, loading messages, and input hints to guide and delight users.           |
-| 🔍 [Search Experience Writer](./content-design/search-experience-writer.md)     | Search interfaces, discoverability, no-results   | Optimizing content for search bars, filters, and no-results pages to enhance user satisfaction.             |
+| Agent | Specialty | When to Use |
+| :--- | :--- | :--- |
+| [Content Designer Generalist](./content-design/content-designer-generalist.md) | UX writing, microcopy, content strategy | General content tasks, initial drafts, not sure where to start |
+| [Conversational AI Designer](./content-design/conversational-ai-designer.md) | Chatbot scripts, voice UIs, dialog flows | Designing dialogue for chatbots, IVRs, or voice assistants |
+| [Accessibility Content Auditor](./content-design/accessibility-content-auditor.md) | WCAG compliance, inclusive language | Auditing content for accessibility, inclusive language |
+| [Microcopy Review Agent](./content-design/microcopy-review-agent.md) | Microcopy refinement, UX text optimization | Reviewing button labels, tooltips, form fields for clarity |
+| [Tone Evaluation Agent](./content-design/tone-evaluation-agent.md) | Tone analysis, brand voice alignment | Assessing and refining emotional register and brand voice |
+| [Onboarding Flow Designer](./content-design/onboarding-flow-designer.md) | Onboarding experiences, user activation | Crafting flows that get users to their first "aha" moment |
+| [Technical Documentation Writer](./content-design/technical-documentation-writer.md) | API docs, SDK guides, technical content | Creating developer documentation with code examples |
+| [CTA Optimization Specialist](./content-design/cta-optimization-specialist.md) | Conversion CTAs, persuasive microcopy | Designing calls-to-action backed by psychology principles |
+| [Error Message Architect](./content-design/error-message-architect.md) | Human-centered error messages | Designing error messages that guide users to resolution |
+| [Mobile UX Writer](./content-design/mobile-ux-writer.md) | Mobile microcopy, app content | Concise content optimized for mobile constraints |
+| [Localization Content Strategist](./content-design/localization-content-strategist.md) | i18n, cultural adaptation | Preparing content for global audiences and translation |
+| [Notification Content Designer](./content-design/notification-content-designer.md) | Push, in-app, email notifications | Crafting notifications that earn their interruption |
+| [Privacy & Legal Content Simplifier](./content-design/privacy-legal-content-simplifier.md) | Legal clarity, compliance content | Translating legal jargon into plain language |
+| [Empty State & Placeholder Specialist](./content-design/empty-state-placeholder-specialist.md) | Empty states, loading messages | Turning blank screens into guidance opportunities |
+| [Search Experience Writer](./content-design/search-experience-writer.md) | Search UI, no-results, filters | Optimizing search placeholders, results, and recovery |
+
+## Agent File Structure
+
+Every agent file includes:
+
+```yaml
+# YAML Frontmatter
+name: Agent Name
+description: One-line description
+version: "1.0.0"
+difficulty_level: beginner | intermediate | advanced
+tags: [searchable, keywords]
+inputs:
+  - name: field_name
+    type: string
+    required: true
+    description: What this input is
+outputs:
+  - name: field_name
+    type: string
+    description: What this output contains
+related_agents:
+  - other-agent-name
+```
+
+Plus markdown sections:
+- **System Prompt** — Drop-in system message for your LLM
+- **Few-Shot Examples** — Input/output pairs showing ideal behavior
+- **Core Mission** — What the agent does
+- **Critical Rules** — Constraints and principles
+- **Technical Deliverables** — What it produces
+- **Workflow Process** — Step-by-step interaction flow
+- **Success Metrics** — How to measure quality
+
+## Project Structure
+
+```
+cd-agency/
+├── content-design/     # 15 agent definition files
+├── docs/               # Decision tree and documentation
+│   └── WHEN_TO_USE.md  # Agent selection guide
+├── examples/           # Before/after case studies (coming)
+├── workflows/          # Multi-agent pipeline definitions (coming)
+├── runtime/            # Execution engine (coming)
+├── tools/              # Evaluation & scoring (coming)
+├── IMPLEMENTATION_PLAN.md
+├── ROADMAP.md
+└── README.md
+```
+
+## Roadmap
+
+See [ROADMAP.md](./ROADMAP.md) for the full plan. Next up:
+
+- **Runtime engine** — Make agents executable via Python SDK
+- **Multi-agent workflows** — Chain agents into pipelines (Content Audit, Launch Package, etc.)
+- **Before/after examples** — Real case studies proving quality improvements
+- **Scoring tools** — Automated readability, accessibility, and brand voice scoring
+- **CLI** — Run agents from the terminal
+
+## Integration with `content-design-prompt-library`
+
+This agency works alongside the [content-design-prompt-library](https://github.com/adedayoagarau/content-design-prompt-library). Use prompts from the library as input to the agents here for structured, high-quality content generation.
 
 ## Contributing
 
-We welcome contributions! Please see the guidelines in the original [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) repository for how to structure agent files. We encourage contributions of new content design agents, examples, and workflows.
+We welcome contributions! You can add:
+- New specialist agents (use any existing agent as a template)
+- Before/after case studies in `/examples`
+- Multi-agent workflow definitions in `/workflows`
+- Design system presets
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License
