@@ -148,24 +148,70 @@ cd-agency/
 │   ├── registry.py     # Agent lookup with aliases and filtering
 │   ├── runner.py       # Executes agents via Anthropic API
 │   └── cli.py          # CLI entry point
-├── tests/              # 45 unit tests
+├── tests/              # 66 unit tests
 ├── docs/               # Decision tree and documentation
 │   └── WHEN_TO_USE.md  # Agent selection guide
-├── examples/           # Before/after case studies (coming)
-├── workflows/          # Multi-agent pipeline definitions (coming)
+├── examples/           # 17 before/after case studies
+├── workflows/          # 5 multi-agent pipeline definitions
 ├── tools/              # Evaluation & scoring (coming)
 ├── IMPLEMENTATION_PLAN.md
 ├── ROADMAP.md
 └── README.md
 ```
 
+## See It In Action
+
+Every agent ships with before/after case studies showing measurable improvements. Here are highlights:
+
+### Individual Agent Examples
+
+| Agent | Case Study | Key Result |
+|-------|-----------|------------|
+| Error Message Architect | [E-commerce 503 error](./examples/error-message-architect-01.md) | Generic "Something went wrong" → empathetic message with 3 resolution steps |
+| Microcopy Review | [Registration form labels](./examples/microcopy-review-02.md) | 319 chars → 43 chars (87% reduction), readability Grade 14 → Grade 3 |
+| CTA Optimization | [SaaS pricing page](./examples/cta-optimization-01.md) | "Submit" → "Start my free trial" with 5 psychology-backed variations |
+| Onboarding Flow Designer | [Mobile banking first login](./examples/onboarding-flow-designer-02.md) | 7 screens → 2 screens, 3 min → 45 sec to reach account |
+| Accessibility Auditor | [Dashboard visualizations](./examples/accessibility-content-auditor-02.md) | 5 WCAG violations → 0, full color-blind + keyboard support |
+
+### Multi-Agent Workflow Examples
+
+| Workflow | Case Study | What Happened |
+|----------|-----------|---------------|
+| Content Audit (4 agents) | [Healthcare appointment page](./examples/workflow-content-audit-01.md) | 4-agent pipeline: structural fix → tone calibration → a11y audit → microcopy polish. Readability Grade 14 → Grade 5 |
+| Launch Content Package (4 agents) | [Feature launch — Team Insights](./examples/workflow-launch-content-package-01.md) | 3 agents in parallel (onboarding + CTAs + empty states) → generalist consolidation. 10 content pieces, 282 words, terminology-consistent |
+
+All 17 case studies follow a [consistent template](./examples/TEMPLATE.md): Context → Before → After → What Changed & Why → Measurable Difference.
+
+Browse all examples in the [`examples/`](./examples/) directory.
+
+## Workflows
+
+Chain agents into multi-step pipelines using YAML workflow definitions:
+
+```bash
+# List available workflows
+cd-agency workflow list
+
+# Run a content audit pipeline
+cd-agency workflow run content-audit --field content="Your button text here"
+
+# Run a launch content package (parallel agents + consolidation)
+cd-agency workflow run launch-content-package --field feature_name="Team Insights"
+```
+
+5 pre-built workflows in [`workflows/`](./workflows/):
+- **Content Audit** — Generalist → Tone → Accessibility → Microcopy (sequential)
+- **Error Message Pipeline** — Error Architect → Tone → A11y → Mobile (sequential)
+- **Launch Content Package** — Onboarding + CTA + Empty State (parallel) → Generalist (consolidation)
+- **Localization Prep** — L10n → Generalist simplification → A11y check (sequential)
+- **Notification Suite** — Notifications → Mobile → Tone → CTA (sequential)
+
 ## Roadmap
 
 See [ROADMAP.md](./ROADMAP.md) for the full plan. Next up:
 
-- **Multi-agent workflows** — Chain agents into pipelines (Content Audit, Launch Package, etc.)
-- **Before/after examples** — Real case studies proving quality improvements
 - **Scoring tools** — Automated readability, accessibility, and brand voice scoring
+- **Design system presets** — Pre-configured tone/voice profiles per brand
 
 ## Integration with `content-design-prompt-library`
 
