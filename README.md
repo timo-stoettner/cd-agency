@@ -141,31 +141,35 @@ print(result.latency_ms)    # Response time
 
 ```
 cd-agency/
-├── content-design/     # 15 agent definition files
-├── runtime/            # Python SDK — loader, runner, registry, CLI
-│   ├── agent.py        # Core Agent model
-│   ├── loader.py       # Parses .md files into Agent objects
-│   ├── registry.py     # Agent lookup with aliases and filtering
-│   ├── runner.py       # Executes agents via Anthropic API
-│   └── cli.py          # CLI entry point (agents, workflows, scoring)
-├── tools/              # Evaluation & scoring tools
-│   ├── scoring.py      # Readability scorer (Flesch-Kincaid, reading ease)
-│   ├── linter.py       # Content lint rules (7+ rules)
-│   ├── a11y_checker.py # WCAG accessibility text checker
-│   ├── voice_checker.py # Brand voice consistency (LLM + rule-based)
-│   ├── report.py       # Report generation (text, JSON, Markdown)
-│   └── export.py       # Export formats (JSON, CSV, Markdown, XLIFF)
+├── content-design/     # 15 agent definitions + template
+├── runtime/            # Core SDK
+│   ├── agent.py        # Agent model
+│   ├── loader.py       # Markdown parser
+│   ├── registry.py     # Agent lookup with fuzzy matching
+│   ├── runner.py       # Anthropic API execution
+│   ├── cli.py          # CLI (agents, workflows, scoring, memory, stats)
+│   ├── config.py       # Config file + env var management
+│   ├── memory.py       # Project-level memory store
+│   └── agent_builder.py # Custom agent wizard
+├── tools/              # Scoring & evaluation tools
+│   ├── scoring.py      # Readability (Flesch-Kincaid)
+│   ├── linter.py       # Content lint (7+ rules)
+│   ├── a11y_checker.py # WCAG accessibility
+│   ├── voice_checker.py # Brand voice consistency
+│   ├── report.py       # Report generation
+│   ├── export.py       # Export (JSON, CSV, Markdown, XLIFF)
+│   └── analytics.py    # Usage tracking (local, privacy-first)
 ├── presets/            # Design system voice profiles
 │   ├── material-design.yaml
 │   ├── shopify-polaris.yaml
 │   ├── atlassian-design.yaml
 │   └── apple-hig.yaml
-├── tests/              # 194 unit tests
-├── docs/               # Documentation and integration specs
-│   ├── WHEN_TO_USE.md  # Agent selection guide
+├── tests/              # 226 unit tests
+├── docs/               # Specs and guides
+│   ├── WHEN_TO_USE.md
 │   ├── figma-plugin-spec.md
 │   └── vscode-extension-spec.md
-├── .github/actions/    # GitHub Action for content linting
+├── .github/            # GitHub Action + issue templates
 ├── examples/           # 17 before/after case studies
 ├── workflows/          # 5 multi-agent pipeline definitions
 ├── IMPLEMENTATION_PLAN.md
@@ -341,12 +345,68 @@ output_format: text  # text, json, markdown
 
 Environment variables override config file values.
 
-## Roadmap
+## Custom Agent Builder
 
-See [ROADMAP.md](./ROADMAP.md) for the full plan. Next up:
+Create your own agents with the interactive wizard:
 
-- **Custom agent builder** — `cd-agency agent create` interactive wizard
-- **Project memory** — Agents remember terminology and voice decisions across sessions
+```bash
+cd-agency agent create
+```
+
+Or copy `content-design/agent-template.md` and fill in the sections.
+
+## Project Memory
+
+Agents remember decisions across sessions:
+
+```bash
+# Store terminology decisions
+cd-agency memory add "app_name" "workspace" --category terminology
+cd-agency memory add "tone" "friendly but professional" --category voice
+
+# View stored memory
+cd-agency memory show
+
+# Memory gets injected into agent context automatically
+```
+
+## Usage Analytics
+
+Local, privacy-first usage tracking:
+
+```bash
+cd-agency stats                # Dashboard
+cd-agency stats --json-output  # JSON export
+cd-agency stats --csv-output   # CSV export
+```
+
+## Use with AI Coding Tools
+
+CD Agency ships with configuration files for all major AI coding tools:
+
+| Tool | Config File | What It Does |
+|------|-------------|-------------|
+| **Claude Code** | `CLAUDE.md` | Project context, architecture, conventions |
+| **Cursor** | `.cursorrules` | Codebase rules and patterns |
+| **Windsurf** | `.windsurfrules` | Same format as Cursor |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | Copilot workspace context |
+| **Replit** | `.replit` | Run config, entrypoint, environment |
+| **Bolt.new** | `.bolt` | Project config for Bolt |
+| **Codex / Others** | `AGENTS.md` | Universal agent instructions |
+
+All tools get:
+- Full project architecture overview
+- Key commands (`pytest`, `cd-agency agent run`, etc.)
+- Conventions (Python 3.10+, type hints, dataclasses)
+- File naming and module patterns
+
+## Docker
+
+```bash
+docker build -t cd-agency .
+docker run cd-agency agent list
+docker run -e ANTHROPIC_API_KEY=sk-... cd-agency agent run error -i "timeout"
+```
 
 ## Integration with `content-design-prompt-library`
 
@@ -354,11 +414,12 @@ This agency works alongside the [content-design-prompt-library](https://github.c
 
 ## Contributing
 
-We welcome contributions! You can add:
-- New specialist agents (use any existing agent as a template)
+See [CONTRIBUTING.md](./CONTRIBUTING.md). You can add:
+- New specialist agents (`cd-agency agent create` or copy the template)
 - Before/after case studies in `/examples`
 - Multi-agent workflow definitions in `/workflows`
-- Design system presets
+- Design system presets in `/presets`
+- Lint rules in `tools/linter.py`
 
 ## License
 

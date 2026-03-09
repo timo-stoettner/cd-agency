@@ -26,8 +26,13 @@ dev = [
 [project.scripts]
 cd-agency = "runtime.cli:main"
 
+[project.urls]
+Homepage = "https://github.com/adedayoagarau/cd-agency"
+Repository = "https://github.com/adedayoagarau/cd-agency"
+Issues = "https://github.com/adedayoagarau/cd-agency/issues"
+
 [tool.setuptools.packages.find]
-include = ["runtime*"]
+include = ["runtime*", "tools*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

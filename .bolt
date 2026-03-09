@@ -1,0 +1,23 @@
+{
+  "name": "cd-agency",
+  "description": "Content Design Agency — 15 AI agents for UX writing, content design, and copy optimization",
+  "framework": "python",
+  "install": "pip install -e .",
+  "start": "cd-agency interactive",
+  "test": "python -m pytest tests/ -v",
+  "env": {
+    "PYTHONPATH": ".",
+    "CD_AGENCY_MODEL": "claude-sonnet-4-20250514"
+  },
+  "files": {
+    "include": [
+      "runtime/**/*.py",
+      "tools/**/*.py",
+      "content-design/**/*.md",
+      "workflows/**/*.yaml",
+      "presets/**/*.yaml",
+      "tests/**/*.py",
+      "pyproject.toml"
+    ]
+  }
+}

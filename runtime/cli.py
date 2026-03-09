@@ -109,6 +109,24 @@ def agent_info(name: str) -> None:
     console.print(f"[bold]Source:[/bold] {a.source_file}\n")
 
 
+@agent.command("create")
+def agent_create() -> None:
+    """Create a new custom agent with an interactive wizard."""
+    from pathlib import Path
+    from runtime.agent_builder import build_agent_interactive
+    config = Config.from_env()
+    build_agent_interactive(config.agents_dir)
+
+
+@agent.command("import")
+@click.argument("source", type=click.Path(exists=True))
+def agent_import(source: str) -> None:
+    """Import an agent from a file."""
+    from runtime.agent_builder import import_agent
+    config = Config.from_env()
+    import_agent(source, config.agents_dir)
+
+
 @agent.command("run")
 @click.argument("name")
 @click.option("--input", "-i", "input_text", help="Inline text input (maps to first required field)")
@@ -548,6 +566,127 @@ def list_presets() -> None:
 
     console.print(table)
     console.print(f"\n[dim]Use with: cd-agency score voice --guide presets/<name>.yaml[/dim]")
+
+
+# --- Memory commands ---
+
+@main.group()
+def memory() -> None:
+    """Manage project-level memory (terminology, decisions, patterns)."""
+    pass
+
+
+@memory.command("show")
+@click.option("--category", "-c", help="Filter by category (terminology, voice, pattern, decision)")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def memory_show(category: str | None, as_json: bool) -> None:
+    """Show stored project memory."""
+    from runtime.memory import ProjectMemory
+
+    mem = ProjectMemory.load()
+    if not mem.entries:
+        console.print("[dim]No memory stored yet.[/dim]")
+        return
+
+    if as_json:
+        click.echo(json.dumps(mem.to_dict(), indent=2))
+        return
+
+    entries = mem.recall_by_category(category) if category else list(mem.entries.values())
+    table = Table(title=f"Project Memory ({len(entries)} entries)")
+    table.add_column("Key", style="cyan")
+    table.add_column("Value")
+    table.add_column("Category", style="dim")
+    table.add_column("Agent", style="dim")
+
+    for e in entries:
+        table.add_row(e.key, e.value, e.category, e.source_agent)
+
+    console.print(table)
+
+
+@memory.command("add")
+@click.argument("key")
+@click.argument("value")
+@click.option("--category", "-c", default="decision",
+              type=click.Choice(["terminology", "voice", "pattern", "decision"]))
+@click.option("--agent", default="", help="Source agent name")
+def memory_add(key: str, value: str, category: str, agent: str) -> None:
+    """Add a memory entry."""
+    from runtime.memory import ProjectMemory
+
+    mem = ProjectMemory.load()
+    mem.remember(key, value, category=category, source_agent=agent)
+    console.print(f"[green]Remembered:[/green] {key} = {value} [{category}]")
+
+
+@memory.command("clear")
+@click.confirmation_option(prompt="Clear all project memory?")
+def memory_clear() -> None:
+    """Clear all project memory."""
+    from runtime.memory import ProjectMemory
+
+    mem = ProjectMemory.load()
+    count = mem.clear()
+    console.print(f"[yellow]Cleared {count} memory entries.[/yellow]")
+
+
+@memory.command("export")
+@click.option("--format", "-f", "fmt", type=click.Choice(["json", "csv"]), default="json")
+def memory_export(fmt: str) -> None:
+    """Export memory as JSON or CSV."""
+    from runtime.memory import ProjectMemory
+
+    mem = ProjectMemory.load()
+    if fmt == "json":
+        click.echo(json.dumps(mem.to_dict(), indent=2))
+    else:
+        import csv
+        import io
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Key", "Value", "Category", "Agent", "Timestamp"])
+        for e in mem.entries.values():
+            writer.writerow([e.key, e.value, e.category, e.source_agent, e.timestamp])
+        click.echo(output.getvalue())
+
+
+# --- Stats command ---
+
+@main.command("stats")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+@click.option("--csv-output", "as_csv", is_flag=True, help="Output as CSV")
+def stats_cmd(as_json: bool, as_csv: bool) -> None:
+    """Show usage analytics dashboard."""
+    from tools.analytics import Analytics
+
+    analytics = Analytics.load()
+
+    if as_json:
+        click.echo(json.dumps(analytics.summary(), indent=2))
+        return
+    if as_csv:
+        click.echo(analytics.export_csv())
+        return
+
+    if analytics.total_runs == 0:
+        console.print("[dim]No usage data yet. Run some agents to see stats![/dim]")
+        return
+
+    summary = analytics.summary()
+    console.print(f"\n[bold]CD Agency Usage Stats[/bold]")
+    console.print(f"Total runs: [cyan]{summary['total_runs']}[/cyan]")
+    console.print(f"Unique agents: [cyan]{summary['unique_agents_used']}[/cyan]")
+    console.print(f"Total tokens: [cyan]{summary['total_tokens']:,}[/cyan]\n")
+
+    if summary["top_agents"]:
+        table = Table(title="Top Agents")
+        table.add_column("Agent", style="cyan")
+        table.add_column("Runs", justify="right")
+        table.add_column("Avg Score", justify="right")
+        for a in summary["top_agents"]:
+            table.add_row(a["name"], str(a["runs"]), str(a["avg_score"]) if a["avg_score"] else "-")
+        console.print(table)
 
 
 def _build_input(

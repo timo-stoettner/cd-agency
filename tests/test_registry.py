@@ -116,7 +116,7 @@ class TestRegistryCustomAlias:
 class TestRegistryFromDirectory:
     def test_loads_all_agents(self):
         registry = AgentRegistry.from_directory(AGENTS_DIR)
-        assert registry.count == 15
+        assert registry.count == 16
 
     def test_all_default_aliases_resolve(self):
         registry = AgentRegistry.from_directory(AGENTS_DIR)
