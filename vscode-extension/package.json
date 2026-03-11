@@ -1,0 +1,89 @@
+{
+  "name": "cd-agency",
+  "displayName": "CD Agency — Content Design",
+  "description": "AI-powered content design agents for UX writing",
+  "version": "0.1.0",
+  "publisher": "cd-agency",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cd-agency.runAgent",
+        "title": "CD Agency: Run Agent on Selection"
+      },
+      {
+        "command": "cd-agency.scoreSelection",
+        "title": "CD Agency: Score Selected Text"
+      },
+      {
+        "command": "cd-agency.listAgents",
+        "title": "CD Agency: List Available Agents"
+      },
+      {
+        "command": "cd-agency.configure",
+        "title": "CD Agency: Configure"
+      }
+    ],
+    "configuration": {
+      "title": "CD Agency",
+      "properties": {
+        "cdAgency.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8100",
+          "description": "Base URL for the CD Agency API server"
+        },
+        "cdAgency.defaultPreset": {
+          "type": "string",
+          "default": "material-design",
+          "enum": [
+            "material-design",
+            "polaris",
+            "atlassian",
+            "apple-hig"
+          ],
+          "description": "Default design system voice preset"
+        },
+        "cdAgency.autoLint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically lint content in string literals as you type"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "cd-agency.runAgent",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/vsce": "^2.22.0"
+  }
+}
