@@ -93,6 +93,8 @@ nav:
       - Workflow Format: workflow-format.md
       - Built-in Workflows: workflows.md
       - Design Presets: presets.md
+  - Integrations:
+      - Overview: integrations.md
   - Guides:
       - Scoring Guide: guide-scoring.md
       - Workflows Guide: guide-workflows.md

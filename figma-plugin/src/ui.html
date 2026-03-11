@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  /* -------------------------------------------------------------- */
+  /* Reset & Variables                                               */
+  /* -------------------------------------------------------------- */
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-hover: #ebebeb;
+    --text: #333333;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --border: #e5e5e5;
+    --brand: #18A0FB;
+    --brand-hover: #0d8de5;
+    --brand-light: #e8f4fd;
+    --success: #1bc47d;
+    --success-light: #eafaf2;
+    --success-hover: #15a86a;
+    --warning: #f2a20d;
+    --warning-light: #fef6e6;
+    --danger: #f24822;
+    --danger-light: #fef2f2;
+    --radius: 6px;
+    --radius-lg: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Screen management                                               */
+  /* -------------------------------------------------------------- */
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* -------------------------------------------------------------- */
+  /* Header                                                          */
+  /* -------------------------------------------------------------- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 8px; }
+  .logo {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, var(--brand), #7c3aed);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .header h1 { font-size: 13px; font-weight: 600; color: var(--text); }
+  .header .subtitle { font-size: 10px; color: var(--text-muted); }
+  .header-actions { display: flex; gap: 2px; }
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: none; cursor: pointer;
+    border-radius: 4px; color: var(--text-secondary);
+    transition: background 0.12s;
+  }
+  .icon-btn:hover { background: var(--bg-secondary); }
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  /* -------------------------------------------------------------- */
+  /* Body                                                            */
+  /* -------------------------------------------------------------- */
+  .body { flex: 1; overflow-y: auto; padding: 14px; }
+
+  /* -------------------------------------------------------------- */
+  /* Footer                                                          */
+  /* -------------------------------------------------------------- */
+  .footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    display: flex; gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Forms                                                           */
+  /* -------------------------------------------------------------- */
+  .field { margin-bottom: 12px; }
+  .field-label {
+    display: block;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+  }
+  select, input[type="text"], input[type="url"], textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  select:focus, input:focus, textarea:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(24,160,251,.12);
+  }
+  textarea { resize: vertical; min-height: 44px; }
+
+  /* -------------------------------------------------------------- */
+  /* Buttons                                                         */
+  /* -------------------------------------------------------------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s, opacity 0.12s;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--brand-hover); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover:not(:disabled) { background: var(--success-hover); }
+  .btn-secondary { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); }
+  .btn-ghost { background: none; color: var(--text-secondary); }
+  .btn-ghost:hover:not(:disabled) { background: var(--bg-secondary); }
+  .btn-sm { padding: 4px 8px; font-size: 10px; }
+  .btn-full { width: 100%; }
+
+  /* -------------------------------------------------------------- */
+  /* Text preview                                                    */
+  /* -------------------------------------------------------------- */
+  .text-preview {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    max-height: 80px;
+    overflow-y: auto;
+    word-break: break-word;
+  }
+  .text-preview-context {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Quick action pills                                              */
+  /* -------------------------------------------------------------- */
+  .quick-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .quick-action {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    background: var(--bg);
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .quick-action:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+  .quick-action.suggested { border-color: var(--brand); color: var(--brand); background: var(--brand-light); font-weight: 500; }
+
+  /* -------------------------------------------------------------- */
+  /* Collapsible                                                     */
+  /* -------------------------------------------------------------- */
+  .toggle-trigger {
+    display: flex; align-items: center; gap: 4px;
+    cursor: pointer; user-select: none;
+    font-size: 11px; font-weight: 500;
+    color: var(--text-secondary);
+    padding: 4px 0;
+  }
+  .toggle-trigger .arrow { font-size: 9px; transition: transform 0.12s; }
+  .toggle-trigger.open .arrow { transform: rotate(90deg); }
+  .toggle-body { display: none; padding-top: 8px; }
+  .toggle-body.open { display: block; }
+
+  /* -------------------------------------------------------------- */
+  /* Spinner                                                         */
+  /* -------------------------------------------------------------- */
+  .loading-wrap {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px; padding: 40px 16px;
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--bg-hover);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* -------------------------------------------------------------- */
+  /* Result cards                                                    */
+  /* -------------------------------------------------------------- */
+  .suggestion-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .suggestion-card:hover {
+    border-color: var(--brand);
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .suggestion-card.recommended {
+    border-color: var(--success);
+    background: var(--success-light);
+  }
+  .suggestion-card .sug-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--success);
+    margin-bottom: 2px;
+  }
+  .suggestion-card .sug-text {
+    font-size: 14px; font-weight: 500;
+    color: var(--text); margin-bottom: 3px;
+    word-break: break-word;
+  }
+  .suggestion-card .sug-reason {
+    font-size: 11px; color: var(--text-secondary);
+    margin-bottom: 8px; line-height: 1.4;
+  }
+  .suggestion-card .sug-actions { display: flex; gap: 6px; }
+
+  .original-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+    word-break: break-word;
+  }
+
+  /* -------------------------------------------------------------- */
+  /* Score badges                                                    */
+  /* -------------------------------------------------------------- */
+  .scores-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .score-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    font-size: 10px; font-weight: 600;
+  }
+  .score-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .score-badge.good { background: var(--success-light); color: var(--success); }
+  .score-badge.good .dot { background: var(--success); }
+  .score-badge.warn { background: var(--warning-light); color: var(--warning); }
+  .score-badge.warn .dot { background: var(--warning); }
+  .score-badge.bad { background: var(--danger-light); color: var(--danger); }
+  .score-badge.bad .dot { background: var(--danger); }
+
+  /* -------------------------------------------------------------- */
+  /* Empty state                                                     */
+  /* -------------------------------------------------------------- */
+  .empty {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 32px;
+    gap: 8px; color: var(--text-muted);
+  }
+  .empty svg { margin-bottom: 4px; }
+
+  /* -------------------------------------------------------------- */
+  /* History                                                         */
+  /* -------------------------------------------------------------- */
+  .history-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-radius: var(--radius);
+    cursor: pointer; transition: background 0.12s;
+  }
+  .history-row:hover { background: var(--bg-secondary); }
+  .history-agent { font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .history-text { font-size: 11px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .history-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+  /* -------------------------------------------------------------- */
+  /* Setup screen                                                    */
+  /* -------------------------------------------------------------- */
+  .setup-center {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 28px; gap: 14px; text-align: center;
+  }
+  .setup-logo {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--brand), #7c3aed);
+    color: #fff;
+    font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .setup-title { font-size: 16px; font-weight: 600; }
+  .setup-desc { font-size: 12px; color: var(--text-secondary); max-width: 240px; }
+  .setup-form { width: 100%; max-width: 260px; }
+
+  /* -------------------------------------------------------------- */
+  /* Error message                                                   */
+  /* -------------------------------------------------------------- */
+  .error-msg {
+    display: none;
+    background: var(--danger-light);
+    border: 1px solid #fecaca;
+    color: var(--danger);
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .error-msg.visible { display: block; }
+
+  /* -------------------------------------------------------------- */
+  /* Toast                                                           */
+  /* -------------------------------------------------------------- */
+  .toast {
+    position: fixed;
+    bottom: 56px; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #333; color: #fff;
+    font-size: 11px; padding: 5px 14px;
+    border-radius: 100px;
+    opacity: 0; pointer-events: none;
+    transition: all 180ms ease;
+    z-index: 100; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* -------------------------------------------------------------- */
+  /* Checkbox                                                        */
+  /* -------------------------------------------------------------- */
+  .check-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-secondary);
+  }
+  .check-row input[type="checkbox"] { width: auto; accent-color: var(--brand); }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- ============================================================== -->
+<!-- SETUP SCREEN                                                    -->
+<!-- ============================================================== -->
+<div id="screen-setup" class="screen">
+  <div class="setup-center">
+    <div class="setup-logo">CD</div>
+    <div class="setup-title">CD Agency</div>
+    <div class="setup-desc">Connect to your CD Agency API to run content design agents directly in Figma.</div>
+    <div class="setup-form">
+      <div class="field">
+        <label class="field-label" for="setup-url">API Base URL</label>
+        <input type="url" id="setup-url" value="http://localhost:8000" placeholder="http://localhost:8000">
+      </div>
+      <div class="field">
+        <label class="field-label" for="setup-key">API Key (optional)</label>
+        <input type="text" id="setup-key" placeholder="sk-...">
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-setup-save">Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PICKER SCREEN                                                   -->
+<!-- ============================================================== -->
+<div id="screen-picker" class="screen">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">CD</div>
+      <div>
+        <h1>CD Agency</h1>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-open-history" title="History">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 3.5V8l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-open-settings" title="Settings">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="body" id="picker-body">
+    <!-- Selected text -->
+    <div class="field">
+      <div class="field-label">Selected Text</div>
+      <div class="text-preview" id="sel-text">No text layer selected</div>
+      <div class="text-preview-context" id="sel-context"></div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="field" id="qa-section">
+      <div class="field-label">Suggested</div>
+      <div class="quick-actions" id="qa-list"></div>
+    </div>
+
+    <!-- Agent -->
+    <div class="field">
+      <label class="field-label" for="agent-select">Agent</label>
+      <select id="agent-select">
+        <option value="">Choose an agent...</option>
+        <option value="microcopy-review-agent">Microcopy Review</option>
+        <option value="error-message-architect">Error Message Architect</option>
+        <option value="cta-optimization-specialist">CTA Optimization Specialist</option>
+        <option value="accessibility-content-auditor">Accessibility Auditor</option>
+        <option value="tone-evaluation-agent">Tone Evaluator</option>
+        <option value="empty-state-placeholder-specialist">Empty State Specialist</option>
+        <option value="onboarding-flow-designer">Onboarding Flow Designer</option>
+        <option value="notification-content-designer">Notification Designer</option>
+        <option value="mobile-ux-writer">Mobile UX Writer</option>
+        <option value="conversational-ai-designer">Conversational AI Designer</option>
+        <option value="search-experience-writer">Search Experience Writer</option>
+        <option value="privacy-legal-content-simplifier">Privacy / Legal Simplifier</option>
+        <option value="localization-content-strategist">Localization Strategist</option>
+        <option value="technical-documentation-writer">Technical Doc Writer</option>
+        <option value="content-designer-generalist">Content Designer (Generalist)</option>
+      </select>
+    </div>
+
+    <!-- Preset -->
+    <div class="field">
+      <label class="field-label" for="preset-select">Design System Preset</label>
+      <select id="preset-select">
+        <option value="">None</option>
+        <option value="material-design">Material Design</option>
+        <option value="polaris">Shopify Polaris</option>
+        <option value="atlassian">Atlassian</option>
+        <option value="apple-hig">Apple HIG</option>
+      </select>
+    </div>
+
+    <!-- Extra context (collapsible) -->
+    <div class="field">
+      <div class="toggle-trigger" id="ctx-trigger">
+        <span class="arrow">&#9654;</span> Additional Context
+      </div>
+      <div class="toggle-body" id="ctx-body">
+        <div class="field">
+          <label class="field-label" for="in-audience">Target Audience</label>
+          <input type="text" id="in-audience" placeholder="e.g. Engineering managers">
+        </div>
+        <div class="field">
+          <label class="field-label" for="in-context">UI Context</label>
+          <input type="text" id="in-context" placeholder="e.g. Pricing page free trial">
+        </div>
+        <div class="field">
+          <label class="field-label" for="in-tone">Tone</label>
+          <input type="text" id="in-tone" placeholder="e.g. Friendly, professional">
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoring toggle -->
+    <div class="check-row">
+      <input type="checkbox" id="chk-score" checked>
+      <label for="chk-score">Auto-score results</label>
+    </div>
+
+    <!-- Error -->
+    <div id="error-msg" class="error-msg"></div>
+  </div>
+
+  <!-- No-selection overlay -->
+  <div id="no-selection-overlay" class="empty" style="display:none;position:absolute;inset:0;top:42px;background:var(--bg);z-index:5;">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 9h10M7 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <strong style="font-size:12px;">Select a text layer</strong>
+    <span id="no-sel-reason" style="font-size:11px;">Select a text layer in Figma to get started.</span>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="btn btn-primary btn-full" id="btn-run" disabled>
+      <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 2l10 6-10 6V2z" fill="currentColor"/></svg>
+      Run Agent
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- LOADING SCREEN                                                  -->
+<!-- ============================================================== -->
+<div id="screen-loading" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">CD</div>
+      <div>
+        <h1>CD Agency</h1>
+        <span class="subtitle" id="load-agent">Running agent...</span>
+      </div>
+    </div>
+  </div>
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <span style="font-size:12px;color:var(--text-secondary);" id="load-msg">Analyzing your text...</span>
+    <span style="font-size:11px;color:var(--text-muted);">This usually takes 5-15 seconds</span>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- RESULTS SCREEN                                                  -->
+<!-- ============================================================== -->
+<div id="screen-results" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">CD</div>
+      <div>
+        <h1>CD Agency</h1>
+        <span class="subtitle" id="res-agent"></span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-res-back" title="Back">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="body">
+    <!-- Original -->
+    <div class="field">
+      <div class="field-label">Original</div>
+      <div class="original-card" id="res-original"></div>
+    </div>
+
+    <!-- Scores -->
+    <div class="scores-row" id="res-scores" style="margin-bottom:12px;"></div>
+
+    <!-- Suggestions -->
+    <div class="field">
+      <div class="field-label">Suggestions</div>
+      <div id="res-suggestions"></div>
+    </div>
+
+    <!-- Full response -->
+    <div class="field">
+      <div class="toggle-trigger" id="resp-trigger">
+        <span class="arrow">&#9654;</span> Full Agent Response
+      </div>
+      <div class="toggle-body" id="resp-body">
+        <div id="res-full" style="font-size:11px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;background:var(--bg-secondary);padding:8px;border-radius:var(--radius);max-height:180px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <button class="btn btn-secondary" id="btn-run-another" style="flex:1;">Run Another</button>
+    <button class="btn btn-ghost btn-sm" id="btn-res-history">History</button>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- HISTORY SCREEN                                                  -->
+<!-- ============================================================== -->
+<div id="screen-history" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">CD</div>
+      <div><h1>History</h1></div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-hist-back" title="Back">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="body">
+    <div id="hist-list"></div>
+    <div id="hist-empty" class="empty" style="display:none;">
+      <svg width="24" height="24" viewBox="0 0 16 16" fill="none"><path d="M8 3.5V8l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span style="font-size:11px;">No history yet. Run an agent to see results here.</span>
+    </div>
+  </div>
+  <div class="footer">
+    <button class="btn btn-secondary btn-sm" id="btn-hist-clear">Clear</button>
+    <button class="btn btn-secondary btn-sm" id="btn-hist-export">Export CSV</button>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SETTINGS SCREEN                                                 -->
+<!-- ============================================================== -->
+<div id="screen-settings" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">CD</div>
+      <div><h1>Settings</h1></div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-set-back" title="Back">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="body">
+    <div class="field">
+      <label class="field-label" for="set-url">API Base URL</label>
+      <input type="url" id="set-url" placeholder="http://localhost:8000">
+    </div>
+    <div class="field">
+      <label class="field-label" for="set-key">API Key</label>
+      <input type="text" id="set-key" placeholder="sk-...">
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-set-save">Save Settings</button>
+  </div>
+</div>
+
+</body>
+</html>
