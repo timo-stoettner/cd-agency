@@ -2,7 +2,7 @@
 
 A complete AI agency specializing in Content Design. 15 specialized agents for UX writing, microcopy, content strategy, and conversation design — each with structured inputs/outputs, system prompts, and few-shot examples ready for integration.
 
-Built on the principles of [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents). Each agent is:
+Each agent is:
 
 - **Specialized**: Deep expertise in specific content design domains
 - **Machine-Parseable**: Structured YAML frontmatter with typed inputs/outputs
@@ -84,7 +84,7 @@ Agents are executable via the Python runtime. Install and use programmatically o
 pip install -e .
 ```
 
-Requires `ANTHROPIC_API_KEY` environment variable (see `.env.example`).
+Requires `ANTHROPIC_API_KEY` or other preferred 'KEY' (I have personally enjoyed Kimi 2.5 too) environment variable (see `.env.example`).
 
 ### CLI Usage
 
