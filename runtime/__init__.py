@@ -10,6 +10,29 @@ from runtime.knowledge import (
     list_knowledge_files,
     search_knowledge,
 )
+from runtime.preflight import (
+    ClarifyingQuestion,
+    PreflightResult,
+    run_preflight,
+    build_assumption_block,
+)
+from runtime.constraints import (
+    ConstraintViolation,
+    ConstraintResult,
+    validate_content,
+    validate_character_limit,
+    validate_localization,
+    validate_platform_conventions,
+    validate_accessibility,
+    get_element_limit,
+    list_element_types,
+)
+from runtime.design_system import (
+    ComponentConstraint,
+    DesignSystem,
+    load_design_system,
+    load_design_system_from_config,
+)
 
 __all__ = [
     "Agent",
@@ -22,4 +45,24 @@ __all__ = [
     "resolve_knowledge_refs",
     "list_knowledge_files",
     "search_knowledge",
+    # Preflight
+    "ClarifyingQuestion",
+    "PreflightResult",
+    "run_preflight",
+    "build_assumption_block",
+    # Constraints
+    "ConstraintViolation",
+    "ConstraintResult",
+    "validate_content",
+    "validate_character_limit",
+    "validate_localization",
+    "validate_platform_conventions",
+    "validate_accessibility",
+    "get_element_limit",
+    "list_element_types",
+    # Design System
+    "ComponentConstraint",
+    "DesignSystem",
+    "load_design_system",
+    "load_design_system_from_config",
 ]

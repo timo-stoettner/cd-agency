@@ -53,6 +53,7 @@ knowledge:
   - frameworks/clarifying-questions
   - frameworks/edge-case-thinking
   - frameworks/platform-conventions
+  - research/ab-test-results
 related_agents:
   - content-designer-generalist
   - cta-optimization-specialist

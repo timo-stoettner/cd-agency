@@ -65,12 +65,26 @@ class AgentRunner:
             context_block = self.config.product_context.build_context_block()
             system_message = f"{system_message}\n\n---\n\n{context_block}"
 
+        # Inject design system constraints if configured
+        from runtime.design_system import load_design_system_from_config
+        design_system = load_design_system_from_config()
+        if design_system:
+            ds_block = design_system.build_context_block()
+            system_message = f"{system_message}\n\n---\n\n{ds_block}"
+
         # Inject project memory if available
         from runtime.memory import ProjectMemory
         memory = ProjectMemory.load()
         memory_context = memory.get_context_for_agent(agent.name)
         if memory_context:
             system_message = f"{system_message}\n\n---\n\n{memory_context}"
+
+        # Run preflight analysis and inject assumptions for missing context
+        from runtime.preflight import run_preflight, build_assumption_block
+        preflight = run_preflight(agent, user_input)
+        assumption_block = build_assumption_block(preflight)
+        if assumption_block:
+            system_message = f"{system_message}\n\n---\n\n{assumption_block}"
 
         user_message = agent.build_user_message(user_input)
 

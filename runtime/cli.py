@@ -130,6 +130,90 @@ def agent_import(source: str) -> None:
     import_agent(source, config.agents_dir)
 
 
+@agent.command("preflight")
+@click.argument("name")
+@click.option("--input", "-i", "input_text", help="Inline text input (maps to first required field)")
+@click.option("--field", "-F", multiple=True, help="Set a specific field: --field name=value")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def agent_preflight(
+    name: str,
+    input_text: str | None,
+    field: tuple[str, ...],
+    as_json: bool,
+) -> None:
+    """Run preflight context analysis — shows what's missing before running an agent."""
+    from runtime.preflight import run_preflight
+
+    registry = _get_registry()
+    a = registry.get(name)
+    if not a:
+        console.print(f"[red]Agent not found: '{name}'[/red]")
+        sys.exit(1)
+
+    # Build input dict
+    user_input: dict[str, Any] = {}
+    for f in field:
+        if "=" in f:
+            key, value = f.split("=", 1)
+            user_input[key.strip()] = value.strip()
+    if input_text and a.inputs:
+        user_input.setdefault(a.inputs[0].name, input_text)
+
+    result = run_preflight(a, user_input)
+
+    if as_json:
+        data = {
+            "agent": a.name,
+            "has_enough_context": result.has_enough_context,
+            "context_score": round(result.context_score, 2),
+            "missing_required": result.missing_required,
+            "missing_recommended": result.missing_recommended,
+            "questions": [
+                {
+                    "field": q.field_name,
+                    "question": q.question,
+                    "why": q.why_it_matters,
+                    "options": q.suggested_options,
+                    "priority": q.priority,
+                }
+                for q in result.questions
+            ],
+            "assumptions": result.assumptions,
+        }
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    console.print(f"\n[bold]Preflight: {a.name}[/bold]")
+    score_pct = int(result.context_score * 100)
+    color = "green" if score_pct >= 80 else "yellow" if score_pct >= 50 else "red"
+    console.print(f"Context completeness: [{color}]{score_pct}%[/{color}]\n")
+
+    if result.missing_required:
+        console.print("[red]Missing required fields:[/red]")
+        for f in result.missing_required:
+            console.print(f"  - {f}")
+        console.print()
+
+    if result.questions:
+        console.print("[yellow]Recommended context (will use defaults if omitted):[/yellow]")
+        for q in result.questions:
+            priority_color = "red" if q.priority == "high" else "yellow" if q.priority == "medium" else "dim"
+            console.print(f"\n  [{priority_color}][{q.priority}][/{priority_color}] {q.question}")
+            console.print(f"  [dim]Why: {q.why_it_matters}[/dim]")
+            if q.suggested_options:
+                console.print(f"  Options: {', '.join(q.suggested_options)}")
+
+    if result.assumptions:
+        console.print(f"\n[dim]Assumptions if you proceed without answering:[/dim]")
+        for assumption in result.assumptions:
+            console.print(f"  - {assumption}")
+
+    if result.has_enough_context and not result.questions:
+        console.print("[green]All context provided. Ready to generate.[/green]")
+
+    console.print()
+
+
 @agent.command("run")
 @click.argument("name")
 @click.option("--input", "-i", "input_text", help="Inline text input (maps to first required field)")
@@ -475,6 +559,99 @@ def score_voice(
     report = ScoringReport(text=text, voice_result=result)
     fmt = ReportFormat.JSON if as_json else ReportFormat.TEXT
     click.echo(report.render(fmt))
+
+
+@score.command("constraints")
+@click.option("--input", "-i", "input_text", help="Text to validate")
+@click.option("--file", "-f", "input_file", type=click.Path(exists=True), help="Read from file")
+@click.option("--element", "-e", required=True,
+              help="UI element type (button, tooltip, toast, push_title, push_body, etc.)")
+@click.option("--platform", "-p", help="Target platform (ios, android, web)")
+@click.option("--language", "-l", "target_language", help="Translation target language (de, fr, es, ja, etc.)")
+@click.option("--limit", type=int, help="Custom character limit override")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def score_constraints(
+    input_text: str | None, input_file: str | None,
+    element: str, platform: str | None,
+    target_language: str | None, limit: int | None,
+    as_json: bool,
+) -> None:
+    """Validate content against UI element constraints (char limits, platform, a11y)."""
+    from runtime.constraints import validate_content, ELEMENT_CHAR_LIMITS
+
+    text = _get_input_text(input_text, input_file)
+
+    if element not in ELEMENT_CHAR_LIMITS:
+        known = ", ".join(sorted(ELEMENT_CHAR_LIMITS.keys()))
+        console.print(f"[red]Unknown element type: '{element}'[/red]")
+        console.print(f"[dim]Known types: {known}[/dim]")
+        sys.exit(1)
+
+    result = validate_content(
+        text, element,
+        platform=platform,
+        target_language=target_language,
+        custom_limit=limit,
+    )
+
+    if as_json:
+        data = {
+            "text": text,
+            "element": element,
+            "passed": result.passed,
+            "violations": [
+                {
+                    "rule": v.rule,
+                    "severity": v.severity,
+                    "message": v.message,
+                    "value": v.value,
+                    "limit": v.limit,
+                }
+                for v in result.violations
+            ],
+        }
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    if result.passed and not result.violations:
+        console.print(f"[green]All constraints passed.[/green]")
+        console.print(f"[dim]Text: \"{text}\" | Element: {element} | {len(text)} chars[/dim]")
+    else:
+        console.print(f"[bold]Constraint Check: {element}[/bold]")
+        console.print(f"[dim]Text ({len(text)} chars): \"{text}\"[/dim]\n")
+
+        for v in result.violations:
+            if v.severity == "error":
+                console.print(f"  [red]ERROR:[/red] {v.message}")
+            elif v.severity == "warning":
+                console.print(f"  [yellow]WARN:[/yellow] {v.message}")
+            else:
+                console.print(f"  [dim]INFO:[/dim] {v.message}")
+
+        console.print(f"\n  {result.summary()}")
+
+
+@score.command("elements")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def score_elements(as_json: bool) -> None:
+    """List all known UI element types and their character limits."""
+    from runtime.constraints import list_element_types
+
+    elements = list_element_types()
+
+    if as_json:
+        click.echo(json.dumps(elements, indent=2))
+        return
+
+    table = Table(title="UI Element Character Limits")
+    table.add_column("Element Type", style="cyan")
+    table.add_column("Max Chars", style="yellow", justify="right")
+    table.add_column("Description", style="white")
+
+    for e in elements:
+        table.add_row(e["type"], str(e["max_chars"]), e["label"])
+
+    console.print(table)
 
 
 @score.command("all")
