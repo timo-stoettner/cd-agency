@@ -34,7 +34,7 @@ This adds `pytest` and `pytest-asyncio` for running the test suite.
 
 ```bash
 cd-agency --version
-# cd-agency, version 0.2.0
+# cd-agency, version 0.4.0
 ```
 
 ```bash

@@ -1,4 +1,4 @@
-# CD Agency v0.3.0 Documentation
+# CD Agency v0.4.0 Documentation
 
 > AI-powered content design agents for UX writers, conversation designers, and product teams.
 

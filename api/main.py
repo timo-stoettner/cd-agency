@@ -10,7 +10,7 @@ from api.routers import agents, history, presets, scoring, validate
 app = FastAPI(
     title="CD Agency API",
     description="Content Design Agency — REST API for UX writing, content scoring, and design system presets.",
-    version="1.0.0",
+    version="0.4.0",
 )
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
