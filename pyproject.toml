@@ -43,6 +43,7 @@ dependencies = [
     "pydantic>=2.0",
     "rich>=13.0",
     "click>=8.1",
+    "textual>=0.80.0",
 ]
 
 [project.optional-dependencies]
@@ -69,7 +70,7 @@ Repository = "https://github.com/adedayoagarau/cd-agency"
 Issues = "https://github.com/adedayoagarau/cd-agency/issues"
 
 [tool.setuptools.packages.find]
-include = ["runtime*", "tools*", "mcp*", "api*"]
+include = ["runtime*", "runtime.tui*", "tools*", "mcp*", "api*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.md", "*.yaml", "*.yml"]
