@@ -33,6 +33,16 @@ from runtime.design_system import (
     load_design_system,
     load_design_system_from_config,
 )
+from runtime.postprocess import (
+    ContentFragment,
+    PostprocessResult,
+    extract_fragments,
+    postprocess_output,
+)
+from runtime.versioning import (
+    ContentVersion,
+    ContentHistory,
+)
 
 __all__ = [
     "Agent",
@@ -65,4 +75,12 @@ __all__ = [
     "DesignSystem",
     "load_design_system",
     "load_design_system_from_config",
+    # Post-processing
+    "ContentFragment",
+    "PostprocessResult",
+    "extract_fragments",
+    "postprocess_output",
+    # Versioning
+    "ContentVersion",
+    "ContentHistory",
 ]

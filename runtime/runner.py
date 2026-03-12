@@ -94,15 +94,39 @@ class AgentRunner:
         resolved_temperature = temperature if temperature is not None else self.config.temperature
 
         if stream:
-            return self._run_streaming(
+            output = self._run_streaming(
+                agent, system_message, user_message,
+                resolved_model, resolved_max_tokens, resolved_temperature,
+            )
+        else:
+            output = self._run_sync(
                 agent, system_message, user_message,
                 resolved_model, resolved_max_tokens, resolved_temperature,
             )
 
-        return self._run_sync(
-            agent, system_message, user_message,
-            resolved_model, resolved_max_tokens, resolved_temperature,
-        )
+        # Record content version for history tracking
+        try:
+            from runtime.versioning import ContentHistory
+            history = ContentHistory.load()
+            # Extract primary input text for the "before"
+            primary_input = ""
+            if agent.inputs:
+                primary_input = str(user_input.get(agent.inputs[0].name, ""))
+            history.record(
+                agent_name=agent.name,
+                agent_slug=agent.slug,
+                input_text=primary_input,
+                output_text=output.content,
+                input_fields={k: str(v) for k, v in user_input.items()},
+                model=output.model,
+                input_tokens=output.input_tokens,
+                output_tokens=output.output_tokens,
+                latency_ms=output.latency_ms,
+            )
+        except Exception:
+            pass  # Versioning should never break agent execution
+
+        return output
 
     def _run_sync(
         self,

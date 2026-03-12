@@ -220,6 +220,8 @@ def agent_preflight(
 @click.option("--file", "-f", "input_file", type=click.Path(exists=True), help="Read input from file")
 @click.option("--field", "-F", multiple=True, help="Set a specific field: --field name=value")
 @click.option("--model", "-m", help="Override the model")
+@click.option("--validate", "-V", is_flag=True, help="Auto-validate output against UI constraints")
+@click.option("--platform", "-p", help="Target platform for validation (ios, android, web)")
 @click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
 def agent_run(
     name: str,
@@ -227,6 +229,8 @@ def agent_run(
     input_file: str | None,
     field: tuple[str, ...],
     model: str | None,
+    validate: bool,
+    platform: str | None,
     as_json: bool,
 ) -> None:
     """Run an agent with the given input."""
@@ -263,17 +267,59 @@ def agent_run(
         sys.exit(1)
 
     if as_json:
-        click.echo(json.dumps({
+        output_data: dict[str, Any] = {
             "agent": a.name,
             "model": result.model,
             "content": result.content,
             "input_tokens": result.input_tokens,
             "output_tokens": result.output_tokens,
             "latency_ms": round(result.latency_ms, 1),
-        }, indent=2))
+        }
+        if validate:
+            from runtime.postprocess import postprocess_output
+            pp = postprocess_output(result, a, platform=platform)
+            output_data["validation"] = {
+                "fragments": len(pp.fragments),
+                "errors": pp.error_count,
+                "warnings": pp.warning_count,
+                "details": [
+                    {
+                        "text": frag.text,
+                        "element": frag.element_type,
+                        "passed": cr.passed,
+                        "violations": [
+                            {"rule": v.rule, "severity": v.severity, "message": v.message}
+                            for v in cr.violations
+                        ],
+                    }
+                    for frag, cr in pp.validations
+                ],
+            }
+        click.echo(json.dumps(output_data, indent=2))
     else:
         console.print(f"\n{result.content}")
         console.print(f"\n[dim]Model: {result.model} | Tokens: {result.input_tokens}→{result.output_tokens} | {result.latency_ms:.0f}ms[/dim]")
+
+        if validate:
+            from runtime.postprocess import postprocess_output
+            pp = postprocess_output(result, a, platform=platform)
+            if pp.validations:
+                console.print(f"\n{'─' * 50}")
+                console.print(f"[bold]Content Validation[/bold] ({len(pp.fragments)} fragment(s))\n")
+                for frag, cr in pp.validations:
+                    if cr.passed and not cr.warnings:
+                        console.print(f"  [green]✓[/green] {frag.element_type}: \"{frag.text[:60]}\"")
+                    else:
+                        status = "[yellow]⚠[/yellow]" if cr.passed else "[red]✗[/red]"
+                        console.print(f"  {status} {frag.element_type}: \"{frag.text[:60]}\"")
+                        for v in cr.violations:
+                            if v.severity == "error":
+                                console.print(f"      [red]{v.message}[/red]")
+                            elif v.severity == "warning":
+                                console.print(f"      [yellow]{v.message}[/yellow]")
+                            else:
+                                console.print(f"      [dim]{v.message}[/dim]")
+                console.print(f"\n  [dim]{pp.summary()}[/dim]")
 
 
 # --- Workflow commands ---
@@ -829,6 +875,187 @@ def memory_export(fmt: str) -> None:
         for e in mem.entries.values():
             writer.writerow([e.key, e.value, e.category, e.source_agent, e.timestamp])
         click.echo(output.getvalue())
+
+
+# --- History (versioning) commands ---
+
+@main.group()
+def history() -> None:
+    """Browse content version history (before/after for every agent run)."""
+    pass
+
+
+@history.command("list")
+@click.option("--agent", "-a", help="Filter by agent slug")
+@click.option("--count", "-n", default=20, help="Number of recent versions to show")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def history_list(agent: str | None, count: int, as_json: bool) -> None:
+    """List recent content versions."""
+    from runtime.versioning import ContentHistory
+
+    hist = ContentHistory.load()
+
+    if agent:
+        versions = hist.list_by_agent(agent)[-count:]
+        versions = list(reversed(versions))
+    else:
+        versions = hist.list_recent(count)
+
+    if as_json:
+        click.echo(json.dumps([v.to_dict() for v in versions], indent=2))
+        return
+
+    if not versions:
+        console.print("[dim]No content versions yet. Run an agent to start tracking.[/dim]")
+        return
+
+    table = Table(title=f"Content History ({len(versions)} of {hist.count})")
+    table.add_column("ID", style="cyan", max_width=12)
+    table.add_column("Agent", style="green")
+    table.add_column("Input", style="white", max_width=40)
+    table.add_column("Output", style="white", max_width=40)
+    table.add_column("Tokens", style="dim", justify="right")
+
+    for v in versions:
+        table.add_row(
+            v.id,
+            v.agent_slug,
+            v.input_preview,
+            v.output_preview,
+            f"{v.input_tokens}→{v.output_tokens}",
+        )
+
+    console.print(table)
+
+
+@history.command("show")
+@click.argument("version_id")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def history_show(version_id: str, as_json: bool) -> None:
+    """Show a specific content version with full before/after."""
+    from runtime.versioning import ContentHistory
+
+    hist = ContentHistory.load()
+    v = hist.get(version_id)
+
+    if not v:
+        console.print(f"[red]Version not found: '{version_id}'[/red]")
+        console.print("Run [cyan]cd-agency history list[/cyan] to see available versions.")
+        sys.exit(1)
+
+    if as_json:
+        click.echo(json.dumps(v.to_dict(), indent=2))
+        return
+
+    import datetime
+    ts = datetime.datetime.fromtimestamp(v.timestamp).strftime("%Y-%m-%d %H:%M:%S")
+
+    console.print(f"\n[bold]Version {v.id}[/bold] — {ts}")
+    console.print(f"[dim]Agent: {v.agent_name} | Model: {v.model}[/dim]")
+    console.print(f"[dim]Tokens: {v.input_tokens}→{v.output_tokens} | {v.latency_ms:.0f}ms[/dim]\n")
+
+    if v.input_fields:
+        console.print("[bold]Input Fields:[/bold]")
+        for k, val in v.input_fields.items():
+            console.print(f"  [cyan]{k}:[/cyan] {val[:100]}")
+        console.print()
+
+    console.print("[bold]Before (Input):[/bold]")
+    console.print(f"  {v.input_text}\n")
+    console.print("[bold]After (Output):[/bold]")
+    console.print(f"  {v.output_text}\n")
+
+
+@history.command("diff")
+@click.argument("version_id")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def history_diff(version_id: str, as_json: bool) -> None:
+    """Show a compact before/after diff for a version."""
+    from runtime.versioning import ContentHistory
+
+    hist = ContentHistory.load()
+    d = hist.diff(version_id)
+
+    if not d:
+        console.print(f"[red]Version not found: '{version_id}'[/red]")
+        sys.exit(1)
+
+    if as_json:
+        click.echo(json.dumps(d, indent=2))
+        return
+
+    console.print(f"\n[bold]Diff: {d['id']}[/bold] ({d['agent']})")
+    console.print(f"[red]- {d['before'][:200]}[/red]")
+    console.print(f"[green]+ {d['after'][:200]}[/green]")
+    delta = d["char_delta"]
+    direction = "shorter" if delta < 0 else "longer" if delta > 0 else "same length"
+    console.print(f"\n[dim]{d['before_len']} → {d['after_len']} chars ({direction}: {delta:+d})[/dim]\n")
+
+
+@history.command("search")
+@click.argument("query")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def history_search(query: str, as_json: bool) -> None:
+    """Search content history by input or output text."""
+    from runtime.versioning import ContentHistory
+
+    hist = ContentHistory.load()
+    results = hist.search(query)
+
+    if as_json:
+        click.echo(json.dumps([v.to_dict() for v in results], indent=2))
+        return
+
+    if not results:
+        console.print(f"[dim]No versions matching '{query}'.[/dim]")
+        return
+
+    table = Table(title=f"Search: '{query}' ({len(results)} results)")
+    table.add_column("ID", style="cyan", max_width=12)
+    table.add_column("Agent", style="green")
+    table.add_column("Input", style="white", max_width=40)
+    table.add_column("Output", style="white", max_width=40)
+
+    for v in results[-20:]:
+        table.add_row(v.id, v.agent_slug, v.input_preview, v.output_preview)
+
+    console.print(table)
+
+
+@history.command("clear")
+@click.confirmation_option(prompt="Clear all content version history?")
+def history_clear() -> None:
+    """Clear all content version history."""
+    from runtime.versioning import ContentHistory
+
+    hist = ContentHistory.load()
+    count = hist.clear()
+    console.print(f"[yellow]Cleared {count} content versions.[/yellow]")
+
+
+@history.command("stats")
+@click.option("--json-output", "as_json", is_flag=True, help="Output as JSON")
+def history_stats(as_json: bool) -> None:
+    """Show content versioning stats."""
+    from runtime.versioning import ContentHistory
+
+    hist = ContentHistory.load()
+    summary = hist.summary()
+
+    if as_json:
+        click.echo(json.dumps(summary, indent=2))
+        return
+
+    if summary["count"] == 0:
+        console.print("[dim]No content versions yet.[/dim]")
+        return
+
+    console.print(f"\n[bold]Content Version Stats[/bold]")
+    console.print(f"  Total versions: [cyan]{summary['count']}[/cyan]")
+    console.print(f"  Agents used: [cyan]{', '.join(summary['agents_used'])}[/cyan]")
+    if summary["latest"]:
+        console.print(f"  Latest: [dim]{summary['latest']['agent']} — {summary['latest']['preview']}[/dim]")
+    console.print()
 
 
 # --- Context commands ---
