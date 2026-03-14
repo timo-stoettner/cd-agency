@@ -7,6 +7,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 from textual.worker import Worker
 
@@ -24,6 +25,65 @@ from runtime.tui.widgets.content_editor import ContentChanged, ContentEditor
 from runtime.tui.widgets.memory_panel import MemoryPanel
 from runtime.tui.widgets.scoring_panel import ScoringPanel
 from runtime.tui.widgets.status_bar import StatusBar
+
+
+class HelpScreen(ModalScreen):
+    """Modal help overlay showing all keyboard shortcuts."""
+
+    DEFAULT_CSS = """
+    HelpScreen {
+        align: center middle;
+    }
+    HelpScreen #help-dialog {
+        width: 60;
+        max-height: 80%;
+        background: $surface;
+        border: thick $primary;
+        padding: 2 4;
+    }
+    HelpScreen .help-title {
+        text-align: center;
+        text-style: bold;
+        padding: 0 0 1 0;
+    }
+    HelpScreen .help-section {
+        padding: 1 0 0 0;
+        text-style: bold;
+        color: $accent;
+    }
+    HelpScreen .help-row {
+        padding: 0 0 0 2;
+    }
+    HelpScreen .help-footer {
+        text-align: center;
+        color: $text-muted;
+        padding: 1 0 0 0;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close", show=True),
+        Binding("f1", "dismiss", "Close", show=False),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="help-dialog"):
+            yield Static("CD Agency Studio — Keyboard Shortcuts", classes="help-title")
+            yield Static("Navigation", classes="help-section")
+            yield Static("  Ctrl+P     Command palette", classes="help-row")
+            yield Static("  Ctrl+O     Toggle Chat / Form mode", classes="help-row")
+            yield Static("  Ctrl+B     Toggle agent sidebar", classes="help-row")
+            yield Static("  Ctrl+Y     Toggle memory panel", classes="help-row")
+            yield Static("  Escape     Dismiss panels / close dialogs", classes="help-row")
+            yield Static("Actions", classes="help-section")
+            yield Static("  Ctrl+R     Run agent on current content", classes="help-row")
+            yield Static("  Ctrl+S     Score current content", classes="help-row")
+            yield Static("  Ctrl+L     Clear chat history", classes="help-row")
+            yield Static("  Enter      Send message (in chat mode)", classes="help-row")
+            yield Static("General", classes="help-section")
+            yield Static("  F1         Show / close this help", classes="help-row")
+            yield Static("  Ctrl+Q     Quit", classes="help-row")
+            yield Static("Press Escape or F1 to close", classes="help-footer")
 
 
 class StudioApp(App):
@@ -48,8 +108,12 @@ class StudioApp(App):
     BINDINGS = [
         Binding("ctrl+p", "command_palette", "Commands", show=True),
         Binding("ctrl+b", "toggle_sidebar", "Sidebar", show=True),
-        Binding("ctrl+m", "toggle_memory", "Memory", show=True),
-        Binding("ctrl+t", "toggle_mode", "Chat/Form", show=True),
+        Binding("ctrl+y", "toggle_memory", "Memory", show=True),
+        Binding("ctrl+o", "toggle_mode", "Chat/Form", show=True),
+        Binding("ctrl+r", "run_agent", "Run", show=True),
+        Binding("ctrl+s", "score_content", "Score", show=True),
+        Binding("ctrl+l", "clear_chat", "Clear", show=True),
+        Binding("escape", "dismiss_panels", "Back", show=False),
         Binding("f1", "help_screen", "Help", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
     ]
@@ -257,18 +321,61 @@ class StudioApp(App):
             tabs.active = "chat-tab"
             status.set_mode("Chat")
 
-    def action_help_screen(self) -> None:
-        """Show help information."""
-        chat = self.query_one("#chat-panel", ChatPanel)
-        chat.add_agent_message(
-            "[bold]Keyboard Shortcuts[/bold]\n"
-            "  Ctrl+P  Command palette\n"
-            "  Ctrl+T  Toggle Chat/Form\n"
-            "  Ctrl+M  Toggle Memory\n"
-            "  Ctrl+B  Toggle Sidebar\n"
-            "  Ctrl+Q  Quit\n"
-            "  Enter   Send message (chat)\n"
+    def action_run_agent(self) -> None:
+        """Run the current agent on form editor content."""
+        if not self._current_agent:
+            chat = self.query_one("#chat-panel", ChatPanel)
+            chat.add_agent_message(
+                "Please select an agent first (use the sidebar or Ctrl+P)."
+            )
+            return
+        editor = self.query_one("#content-editor", ContentEditor)
+        text = editor.text.strip()
+        if not text:
+            return
+        output_panel = self.query_one("#agent-output", AgentOutputPanel)
+        output_panel.show_loading()
+        self.run_worker(
+            self._form_run_worker,
+            name="form-run",
+            exclusive=True,
+            thread=True,
         )
+
+    def _form_run_worker(self) -> AgentOutput:
+        """Execute agent on form content (runs in thread)."""
+        from runtime.config import Config
+        from runtime.runner import AgentRunner
+
+        editor = self.query_one("#content-editor", ContentEditor)
+        runner = AgentRunner(Config.from_env())
+        return runner.run(self._current_agent, editor.text)
+
+    def action_score_content(self) -> None:
+        """Score the current content (form editor or last chat message)."""
+        editor = self.query_one("#content-editor", ContentEditor)
+        text = editor.text.strip()
+        if text:
+            self._update_scores(text)
+
+    def action_clear_chat(self) -> None:
+        """Clear the chat history."""
+        self.query_one("#chat-panel", ChatPanel).clear_chat()
+
+    def action_dismiss_panels(self) -> None:
+        """Dismiss open panels — close memory if open, otherwise close sidebar."""
+        memory = self.query_one("#memory-panel", MemoryPanel)
+        if memory.display:
+            memory.display = False
+            self.query_one("#agent-browser", AgentBrowser).display = True
+            return
+        browser = self.query_one("#agent-browser", AgentBrowser)
+        if not browser.display:
+            browser.display = True
+
+    def action_help_screen(self) -> None:
+        """Show modal help screen."""
+        self.push_screen(HelpScreen())
 
     # --- Command palette callbacks ---
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from runtime.tui.app import StudioApp
+from runtime.tui.app import HelpScreen, StudioApp
 from runtime.tui.widgets.agent_browser import AgentBrowser
 from runtime.tui.widgets.chat_panel import ChatPanel
 from runtime.tui.widgets.content_editor import ContentEditor
@@ -48,7 +48,7 @@ class TestStudioApp:
 
     @pytest.mark.asyncio
     async def test_toggle_mode(self, app):
-        """Ctrl+T should toggle between Chat and Form mode."""
+        """Ctrl+O should toggle between Chat and Form mode."""
         async with app.run_test() as pilot:
             status = app.query_one("#status-bar", StatusBar)
             assert status._mode == "Chat"
@@ -59,7 +59,7 @@ class TestStudioApp:
 
     @pytest.mark.asyncio
     async def test_toggle_memory(self, app):
-        """Ctrl+M should toggle memory panel visibility."""
+        """Ctrl+Y should toggle memory panel visibility."""
         async with app.run_test() as pilot:
             browser = app.query_one("#agent-browser", AgentBrowser)
             memory = app.query_one("#memory-panel", MemoryPanel)
@@ -98,3 +98,68 @@ class TestStudioApp:
             assert status._mode == "Form"
             app.switch_mode_to("Chat")
             assert status._mode == "Chat"
+
+    @pytest.mark.asyncio
+    async def test_clear_chat_action(self, app):
+        """Ctrl+L should clear chat history."""
+        async with app.run_test() as pilot:
+            chat = app.query_one("#chat-panel", ChatPanel)
+            chat.add_user_message("test message")
+            assert len(chat._messages) == 1
+            app.action_clear_chat()
+            assert len(chat._messages) == 0
+
+    @pytest.mark.asyncio
+    async def test_dismiss_panels_closes_memory(self, app):
+        """Escape should close memory panel and show agent browser."""
+        async with app.run_test() as pilot:
+            browser = app.query_one("#agent-browser", AgentBrowser)
+            memory = app.query_one("#memory-panel", MemoryPanel)
+            # Open memory panel first
+            app.action_toggle_memory()
+            assert memory.display is True
+            assert browser.display is False
+            # Escape should close it
+            app.action_dismiss_panels()
+            assert memory.display is False
+            assert browser.display is True
+
+    @pytest.mark.asyncio
+    async def test_dismiss_panels_restores_sidebar(self, app):
+        """Escape should restore sidebar when it's hidden."""
+        async with app.run_test() as pilot:
+            browser = app.query_one("#agent-browser", AgentBrowser)
+            app.action_toggle_sidebar()
+            assert browser.display is False
+            app.action_dismiss_panels()
+            assert browser.display is True
+
+    @pytest.mark.asyncio
+    async def test_help_screen_opens(self, app):
+        """F1 should open the help screen modal."""
+        async with app.run_test() as pilot:
+            app.action_help_screen()
+            assert app.screen.__class__.__name__ == "HelpScreen"
+
+    @pytest.mark.asyncio
+    async def test_score_content_action(self, app):
+        """Ctrl+S should trigger scoring on editor content."""
+        async with app.run_test() as pilot:
+            # Has initial content "Hello world", so scoring should work
+            app.action_score_content()
+            # Should not raise
+
+    @pytest.mark.asyncio
+    async def test_run_agent_without_agent_selected(self, app):
+        """Ctrl+R without agent selected should show guidance message."""
+        async with app.run_test() as pilot:
+            app.action_run_agent()
+            chat = app.query_one("#chat-panel", ChatPanel)
+            assert any("select an agent" in m["content"].lower() for m in chat._messages)
+
+    @pytest.mark.asyncio
+    async def test_bindings_avoid_terminal_conflicts(self, app):
+        """Bindings should not use ctrl+m (= Enter) or ctrl+t (= new tab)."""
+        binding_keys = [b.key for b in app.BINDINGS]
+        assert "ctrl+m" not in binding_keys, "ctrl+m conflicts with Enter in terminals"
+        assert "ctrl+t" not in binding_keys, "ctrl+t conflicts with new-tab in terminals"
