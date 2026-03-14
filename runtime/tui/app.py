@@ -7,11 +7,13 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Static, TabbedContent, TabPane
 from textual.worker import Worker
 
 from runtime.agent import Agent, AgentOutput
 from runtime.tui.widgets.agent_browser import AgentBrowser, AgentSelected
+from runtime.tui.widgets.sidebar_menu import MenuAction
 from runtime.tui.widgets.agent_output import AgentOutputPanel, OutputAccepted
 from runtime.tui.widgets.chat_panel import (
     AcceptRequested,
@@ -24,6 +26,65 @@ from runtime.tui.widgets.content_editor import ContentChanged, ContentEditor
 from runtime.tui.widgets.memory_panel import MemoryPanel
 from runtime.tui.widgets.scoring_panel import ScoringPanel
 from runtime.tui.widgets.status_bar import StatusBar
+
+
+class HelpScreen(ModalScreen):
+    """Modal help overlay showing all keyboard shortcuts."""
+
+    DEFAULT_CSS = """
+    HelpScreen {
+        align: center middle;
+    }
+    HelpScreen #help-dialog {
+        width: 60;
+        max-height: 80%;
+        background: $surface;
+        border: thick $primary;
+        padding: 2 4;
+    }
+    HelpScreen .help-title {
+        text-align: center;
+        text-style: bold;
+        padding: 0 0 1 0;
+    }
+    HelpScreen .help-section {
+        padding: 1 0 0 0;
+        text-style: bold;
+        color: $accent;
+    }
+    HelpScreen .help-row {
+        padding: 0 0 0 2;
+    }
+    HelpScreen .help-footer {
+        text-align: center;
+        color: $text-muted;
+        padding: 1 0 0 0;
+    }
+    """
+
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close", show=True),
+        Binding("f1", "dismiss", "Close", show=False),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="help-dialog"):
+            yield Static("CD Agency Studio — Keyboard Shortcuts", classes="help-title")
+            yield Static("Navigation", classes="help-section")
+            yield Static("  Ctrl+P     Command palette", classes="help-row")
+            yield Static("  Ctrl+O     Toggle Chat / Form mode", classes="help-row")
+            yield Static("  Ctrl+B     Toggle agent sidebar", classes="help-row")
+            yield Static("  Ctrl+Y     Toggle memory panel", classes="help-row")
+            yield Static("  Escape     Dismiss panels / close dialogs", classes="help-row")
+            yield Static("Actions", classes="help-section")
+            yield Static("  Ctrl+R     Run agent on current content", classes="help-row")
+            yield Static("  Ctrl+S     Score current content", classes="help-row")
+            yield Static("  Ctrl+L     Clear chat history", classes="help-row")
+            yield Static("  Enter      Send message (in chat mode)", classes="help-row")
+            yield Static("General", classes="help-section")
+            yield Static("  F1         Show / close this help", classes="help-row")
+            yield Static("  Ctrl+Q     Quit", classes="help-row")
+            yield Static("Press Escape or F1 to close", classes="help-footer")
 
 
 class StudioApp(App):
@@ -48,8 +109,12 @@ class StudioApp(App):
     BINDINGS = [
         Binding("ctrl+p", "command_palette", "Commands", show=True),
         Binding("ctrl+b", "toggle_sidebar", "Sidebar", show=True),
-        Binding("ctrl+m", "toggle_memory", "Memory", show=True),
-        Binding("ctrl+t", "toggle_mode", "Chat/Form", show=True),
+        Binding("ctrl+y", "toggle_memory", "Memory", show=True),
+        Binding("ctrl+o", "toggle_mode", "Chat/Form", show=True),
+        Binding("ctrl+r", "run_agent", "Run", show=True),
+        Binding("ctrl+s", "score_content", "Score", show=True),
+        Binding("ctrl+l", "clear_chat", "Clear", show=True),
+        Binding("escape", "dismiss_panels", "Back", show=False),
         Binding("f1", "help_screen", "Help", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
     ]
@@ -94,6 +159,8 @@ class StudioApp(App):
         status = self.query_one("#status-bar", StatusBar)
         status.set_preset(self._preset_name)
         status.set_mode("Chat")
+        self._sync_menu_mode("Chat")
+        self._sync_menu_preset(self._preset_name)
 
     def _load_agents(self) -> None:
         """Load agents from the content-design directory."""
@@ -121,6 +188,18 @@ class StudioApp(App):
             )
         except Exception:
             pass
+
+    # --- Sidebar menu ---
+
+    def on_menu_action(self, event: MenuAction) -> None:
+        """Handle clicks from the sidebar menu buttons."""
+        if event.action.startswith("preset:"):
+            preset = event.action.split(":", 1)[1]
+            self.switch_preset(preset)
+        else:
+            action_method = getattr(self, f"action_{event.action}", None)
+            if action_method:
+                action_method()
 
     # --- Agent selection ---
 
@@ -253,22 +332,67 @@ class StudioApp(App):
         if tabs.active == "chat-tab":
             tabs.active = "form-tab"
             status.set_mode("Form")
+            self._sync_menu_mode("Form")
         else:
             tabs.active = "chat-tab"
             status.set_mode("Chat")
+            self._sync_menu_mode("Chat")
+
+    def action_run_agent(self) -> None:
+        """Run the current agent on form editor content."""
+        if not self._current_agent:
+            chat = self.query_one("#chat-panel", ChatPanel)
+            chat.add_agent_message(
+                "Please select an agent first (use the sidebar or Ctrl+P)."
+            )
+            return
+        editor = self.query_one("#content-editor", ContentEditor)
+        text = editor.text.strip()
+        if not text:
+            return
+        output_panel = self.query_one("#agent-output", AgentOutputPanel)
+        output_panel.show_loading()
+        self.run_worker(
+            self._form_run_worker,
+            name="form-run",
+            exclusive=True,
+            thread=True,
+        )
+
+    def _form_run_worker(self) -> AgentOutput:
+        """Execute agent on form content (runs in thread)."""
+        from runtime.config import Config
+        from runtime.runner import AgentRunner
+
+        editor = self.query_one("#content-editor", ContentEditor)
+        runner = AgentRunner(Config.from_env())
+        return runner.run(self._current_agent, editor.text)
+
+    def action_score_content(self) -> None:
+        """Score the current content (form editor or last chat message)."""
+        editor = self.query_one("#content-editor", ContentEditor)
+        text = editor.text.strip()
+        if text:
+            self._update_scores(text)
+
+    def action_clear_chat(self) -> None:
+        """Clear the chat history."""
+        self.query_one("#chat-panel", ChatPanel).clear_chat()
+
+    def action_dismiss_panels(self) -> None:
+        """Dismiss open panels — close memory if open, otherwise close sidebar."""
+        memory = self.query_one("#memory-panel", MemoryPanel)
+        if memory.display:
+            memory.display = False
+            self.query_one("#agent-browser", AgentBrowser).display = True
+            return
+        browser = self.query_one("#agent-browser", AgentBrowser)
+        if not browser.display:
+            browser.display = True
 
     def action_help_screen(self) -> None:
-        """Show help information."""
-        chat = self.query_one("#chat-panel", ChatPanel)
-        chat.add_agent_message(
-            "[bold]Keyboard Shortcuts[/bold]\n"
-            "  Ctrl+P  Command palette\n"
-            "  Ctrl+T  Toggle Chat/Form\n"
-            "  Ctrl+M  Toggle Memory\n"
-            "  Ctrl+B  Toggle Sidebar\n"
-            "  Ctrl+Q  Quit\n"
-            "  Enter   Send message (chat)\n"
-        )
+        """Show modal help screen."""
+        self.push_screen(HelpScreen())
 
     # --- Command palette callbacks ---
 
@@ -276,6 +400,7 @@ class StudioApp(App):
         """Switch the active design system preset."""
         self._preset_name = preset
         self.query_one("#status-bar", StatusBar).set_preset(preset)
+        self._sync_menu_preset(preset)
 
     def switch_mode_to(self, mode: str) -> None:
         """Switch to a specific mode."""
@@ -286,6 +411,21 @@ class StudioApp(App):
         else:
             tabs.active = "form-tab"
         status.set_mode(mode)
+        self._sync_menu_mode(mode)
+
+    def _sync_menu_mode(self, mode: str) -> None:
+        """Update sidebar menu mode label."""
+        try:
+            self.query_one("#agent-browser", AgentBrowser).menu.set_mode(mode)
+        except Exception:
+            pass
+
+    def _sync_menu_preset(self, preset: str) -> None:
+        """Update sidebar menu preset highlight."""
+        try:
+            self.query_one("#agent-browser", AgentBrowser).menu.set_preset(preset)
+        except Exception:
+            pass
 
     def run_action_command(self, action: str) -> None:
         """Execute a named action from the command palette."""

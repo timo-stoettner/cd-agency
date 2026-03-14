@@ -1595,8 +1595,9 @@ def studio(preset: str | None, content: str | None, content_file: str | None) ->
     chat conversationally, edit content with live scoring, and manage
     project memory.
 
-    Keyboard shortcuts: Ctrl+P (commands), Ctrl+T (chat/form),
-    Ctrl+M (memory), Ctrl+B (sidebar), Ctrl+Q (quit).
+    Keyboard shortcuts: Ctrl+P (commands), Ctrl+O (chat/form),
+    Ctrl+R (run), Ctrl+S (score), Ctrl+L (clear), Ctrl+Y (memory),
+    Ctrl+B (sidebar), F1 (help), Ctrl+Q (quit).
     """
     from runtime.tui import StudioApp
 
