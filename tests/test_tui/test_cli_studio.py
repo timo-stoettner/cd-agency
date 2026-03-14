@@ -25,7 +25,7 @@ class TestStudioCommand:
         runner = CliRunner()
         result = runner.invoke(main, ["studio", "--help"])
         assert "Ctrl+P" in result.output
-        assert "Ctrl+T" in result.output
+        assert "Ctrl+O" in result.output
 
     def test_studio_preset_option(self):
         """Studio should accept --preset option."""

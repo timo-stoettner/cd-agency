@@ -13,6 +13,7 @@ from textual.worker import Worker
 
 from runtime.agent import Agent, AgentOutput
 from runtime.tui.widgets.agent_browser import AgentBrowser, AgentSelected
+from runtime.tui.widgets.sidebar_menu import MenuAction
 from runtime.tui.widgets.agent_output import AgentOutputPanel, OutputAccepted
 from runtime.tui.widgets.chat_panel import (
     AcceptRequested,
@@ -158,6 +159,8 @@ class StudioApp(App):
         status = self.query_one("#status-bar", StatusBar)
         status.set_preset(self._preset_name)
         status.set_mode("Chat")
+        self._sync_menu_mode("Chat")
+        self._sync_menu_preset(self._preset_name)
 
     def _load_agents(self) -> None:
         """Load agents from the content-design directory."""
@@ -185,6 +188,18 @@ class StudioApp(App):
             )
         except Exception:
             pass
+
+    # --- Sidebar menu ---
+
+    def on_menu_action(self, event: MenuAction) -> None:
+        """Handle clicks from the sidebar menu buttons."""
+        if event.action.startswith("preset:"):
+            preset = event.action.split(":", 1)[1]
+            self.switch_preset(preset)
+        else:
+            action_method = getattr(self, f"action_{event.action}", None)
+            if action_method:
+                action_method()
 
     # --- Agent selection ---
 
@@ -317,9 +332,11 @@ class StudioApp(App):
         if tabs.active == "chat-tab":
             tabs.active = "form-tab"
             status.set_mode("Form")
+            self._sync_menu_mode("Form")
         else:
             tabs.active = "chat-tab"
             status.set_mode("Chat")
+            self._sync_menu_mode("Chat")
 
     def action_run_agent(self) -> None:
         """Run the current agent on form editor content."""
@@ -383,6 +400,7 @@ class StudioApp(App):
         """Switch the active design system preset."""
         self._preset_name = preset
         self.query_one("#status-bar", StatusBar).set_preset(preset)
+        self._sync_menu_preset(preset)
 
     def switch_mode_to(self, mode: str) -> None:
         """Switch to a specific mode."""
@@ -393,6 +411,21 @@ class StudioApp(App):
         else:
             tabs.active = "form-tab"
         status.set_mode(mode)
+        self._sync_menu_mode(mode)
+
+    def _sync_menu_mode(self, mode: str) -> None:
+        """Update sidebar menu mode label."""
+        try:
+            self.query_one("#agent-browser", AgentBrowser).menu.set_mode(mode)
+        except Exception:
+            pass
+
+    def _sync_menu_preset(self, preset: str) -> None:
+        """Update sidebar menu preset highlight."""
+        try:
+            self.query_one("#agent-browser", AgentBrowser).menu.set_preset(preset)
+        except Exception:
+            pass
 
     def run_action_command(self, action: str) -> None:
         """Execute a named action from the command palette."""

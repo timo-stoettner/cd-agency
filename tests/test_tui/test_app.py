@@ -163,3 +163,29 @@ class TestStudioApp:
         binding_keys = [b.key for b in app.BINDINGS]
         assert "ctrl+m" not in binding_keys, "ctrl+m conflicts with Enter in terminals"
         assert "ctrl+t" not in binding_keys, "ctrl+t conflicts with new-tab in terminals"
+
+    @pytest.mark.asyncio
+    async def test_sidebar_menu_exists(self, app):
+        """Sidebar should contain a menu with action buttons."""
+        async with app.run_test() as pilot:
+            browser = app.query_one("#agent-browser", AgentBrowser)
+            menu = browser.menu
+            assert menu is not None
+
+    @pytest.mark.asyncio
+    async def test_menu_preset_syncs_on_switch(self, app):
+        """Switching preset should update the sidebar menu highlight."""
+        async with app.run_test() as pilot:
+            app.switch_preset("Apple HIG")
+            from runtime.tui.widgets.sidebar_menu import SidebarMenu
+            menu = app.query_one("#sidebar-menu", SidebarMenu)
+            assert menu._current_preset == "Apple HIG"
+
+    @pytest.mark.asyncio
+    async def test_menu_mode_syncs_on_toggle(self, app):
+        """Toggling mode should update the sidebar menu label."""
+        async with app.run_test() as pilot:
+            from runtime.tui.widgets.sidebar_menu import SidebarMenu
+            app.action_toggle_mode()
+            menu = app.query_one("#sidebar-menu", SidebarMenu)
+            assert menu._current_mode == "Form"

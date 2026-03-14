@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Vertical, VerticalScroll
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Input, Label, ListItem, ListView, Static
 
 from runtime.agent import Agent
+from runtime.tui.widgets.sidebar_menu import SidebarMenu
 
 
 class AgentSelected(Message):
@@ -20,11 +21,11 @@ class AgentSelected(Message):
 
 
 class AgentBrowser(Widget):
-    """Searchable agent list grouped by primary tag."""
+    """Sidebar with quick-action menu and searchable agent list."""
 
     DEFAULT_CSS = """
     AgentBrowser {
-        width: 28;
+        width: 32;
         dock: left;
         background: $surface;
         border-right: solid $primary-background;
@@ -49,12 +50,20 @@ class AgentBrowser(Widget):
     AgentBrowser .agent-item:hover {
         background: $boost;
     }
+    AgentBrowser #sidebar-scroll {
+        height: 1fr;
+    }
     """
 
     def __init__(self, agents: list[Agent] | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self._agents: list[Agent] = agents or []
         self._filtered: list[Agent] = list(self._agents)
+
+    @property
+    def menu(self) -> SidebarMenu:
+        """Access the sidebar menu widget."""
+        return self.query_one("#sidebar-menu", SidebarMenu)
 
     def set_agents(self, agents: list[Agent]) -> None:
         """Update the agent list and refresh."""
@@ -63,9 +72,11 @@ class AgentBrowser(Widget):
         self._rebuild_list()
 
     def compose(self) -> ComposeResult:
-        yield Static("AGENTS", classes="browser-title")
-        yield Input(placeholder="Search agents...", id="agent-search")
-        yield ListView(id="agent-list")
+        with VerticalScroll(id="sidebar-scroll"):
+            yield SidebarMenu(id="sidebar-menu")
+            yield Static("AGENTS", classes="browser-title")
+            yield Input(placeholder="Search agents...", id="agent-search")
+            yield ListView(id="agent-list")
 
     def on_mount(self) -> None:
         self._rebuild_list()
