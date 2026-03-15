@@ -1,5 +1,6 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const HtmlInlineScriptPlugin = require("html-inline-script-webpack-plugin");
 
 module.exports = (env, argv) => [
   // Main thread (Figma sandbox) — code.ts
@@ -23,7 +24,13 @@ module.exports = (env, argv) => [
     resolve: {
       extensions: [".ts", ".js"],
     },
-    target: "es2020",
+    target: "web",
+    output: {
+      filename: "code.js",
+      path: path.resolve(__dirname, "dist"),
+      clean: false,
+      chunkFormat: false,
+    },
   },
 
   // UI thread (iframe) — ui.ts + ui.html
@@ -58,6 +65,7 @@ module.exports = (env, argv) => [
         inject: "body",
         chunks: ["main"],
       }),
+      new HtmlInlineScriptPlugin(),
     ],
     target: "web",
   },

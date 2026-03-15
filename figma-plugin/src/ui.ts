@@ -94,7 +94,7 @@ let apiUrl  = DEFAULT_URL;
 let apiKey  = "";
 let selection: SelectionMsg | null = null;
 let nodeId  = "";
-let history: HistoryEntry[] = [];
+let historyLog: HistoryEntry[] = [];
 
 // =====================================================================
 // Helpers
@@ -168,19 +168,19 @@ function saveSettings(url: string, key: string): void {
 
 function loadHistory(): void {
   try {
-    history = JSON.parse(localStorage.getItem(HIST_KEY) || "[]");
-  } catch { history = []; }
+    historyLog = JSON.parse(localStorage.getItem(HIST_KEY) || "[]");
+  } catch { historyLog = []; }
 }
 
 function saveHistory(): void {
   try {
-    localStorage.setItem(HIST_KEY, JSON.stringify(history.slice(0, MAX_HIST)));
+    localStorage.setItem(HIST_KEY, JSON.stringify(historyLog.slice(0, MAX_HIST)));
   } catch { /* noop */ }
 }
 
 function pushHistory(e: HistoryEntry): void {
-  history.unshift(e);
-  if (history.length > MAX_HIST) history.pop();
+  historyLog.unshift(e);
+  if (historyLog.length > MAX_HIST) historyLog.pop();
   saveHistory();
 }
 
@@ -392,13 +392,13 @@ function renderHistory(): void {
   const empty = $("#hist-empty")!;
   list.innerHTML = "";
 
-  if (!history.length) {
+  if (!historyLog.length) {
     empty.style.display = "flex";
     return;
   }
   empty.style.display = "none";
 
-  for (const e of history) {
+  for (const e of historyLog) {
     const row = document.createElement("div");
     row.className = "history-row";
     row.innerHTML = `
@@ -487,12 +487,12 @@ async function handleRun(): Promise<void> {
 // =====================================================================
 
 function exportCSV(): void {
-  if (!history.length) {
+  if (!historyLog.length) {
     toast("No history to export");
     return;
   }
   const hdr = ["Timestamp", "Agent", "Original", "Suggestion", "Preset"];
-  const rows = history.map(e => [
+  const rows = historyLog.map(e => [
     new Date(e.timestamp).toISOString(),
     e.agentLabel,
     `"${e.originalText.replace(/"/g, '""')}"`,
@@ -546,7 +546,7 @@ function bindEvents(): void {
   $("#btn-res-history")!.addEventListener("click",  () => { renderHistory(); showScreen("history"); });
   $("#btn-hist-back")!.addEventListener("click",    () => showScreen("picker"));
   $("#btn-hist-clear")!.addEventListener("click",   () => {
-    history = [];
+    historyLog = [];
     saveHistory();
     renderHistory();
     toast("Cleared");

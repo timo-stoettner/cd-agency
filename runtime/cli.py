@@ -643,6 +643,7 @@ def score_voice(
     """Check text against a brand voice guide."""
     from tools.voice_checker import VoiceChecker, VoiceProfile
     from tools.report import ScoringReport, ReportFormat
+    from runtime.config import Config
 
     text = _get_input_text(input_text, input_file)
 
@@ -651,11 +652,17 @@ def score_voice(
         sys.exit(1)
 
     profile = VoiceProfile.from_yaml(guide)
-    checker = VoiceChecker()
 
     if no_llm:
+        checker = VoiceChecker()
         result = checker.check_without_llm(text, profile)
     else:
+        config = Config.from_env()
+        if not config.api_key:
+            click.echo("Error: ANTHROPIC_API_KEY is not set. Use --no-llm for rule-based check.", err=True)
+            sys.exit(1)
+        import anthropic
+        checker = VoiceChecker(client=anthropic.Anthropic(api_key=config.api_key))
         result = checker.check(text, profile)
 
     report = ScoringReport(text=text, voice_result=result)

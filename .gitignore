@@ -13,3 +13,7 @@ cd-agency.yaml
 .pytest_cache/
 *.egg
 site/
+
+node_modules/
+package-lock.json
+
